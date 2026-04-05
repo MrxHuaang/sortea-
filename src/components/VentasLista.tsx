@@ -64,6 +64,15 @@ export default function VentasLista({ ventas }: VentasListaProps) {
     }
   };
 
+  const removeVenta = async (id: string) => {
+    if (!confirm("¿Seguro que quieres eliminar esta venta?")) return;
+    try {
+      await deleteDoc(doc(db, "ventas", id));
+    } catch (error) {
+      console.error("Error al eliminar venta:", error);
+    }
+  };
+
   const shareWhatsApp = (venta: Venta) => {
     const text = `¡Hola ${venta.nombre}! 👋\n\nConfirmamos tu boleta #${formatNumber(venta.numero)} como PAGADA. ¡Gracias! 🍀`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");

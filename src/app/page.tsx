@@ -15,7 +15,11 @@ import {
   Check,
   Info,
   Star,
-  ExternalLink
+  Calendar,
+  Sparkles,
+  Copy,
+  GraduationCap,
+  Heart
 } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import Link from "next/link";
@@ -28,6 +32,7 @@ export default function Home() {
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubConfig = onSnapshot(doc(db, "config", "actual"), (docSnap) => {
@@ -59,6 +64,12 @@ export default function Home() {
       unsubVentas();
     };
   }, []);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(text);
+    setTimeout(() => setCopiedText(null), 2000);
+  };
 
   const handleSelect = (num: number) => {
     if (selectedNumbers.includes(num)) {
@@ -119,28 +130,28 @@ export default function Home() {
       <Navbar />
       <main className="max-w-7xl mx-auto px-6 pt-32 pb-24 md:pt-48 transition-colors">
         {/* Hero Section */}
-        <section className="flex flex-col gap-12 mb-32 md:mb-48">
+        <section className="flex flex-col gap-12 mb-20 md:mb-32">
           <div className="space-y-8 max-w-5xl">
             <div className="flex items-center gap-3">
               <span className="h-[1px] w-8 bg-zinc-900"></span>
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Gran Rifa Familiar</span>
             </div>
-            <h1 className="text-6xl md:text-8xl lg:text-[10rem] font-black text-gray-900 tracking-tighter leading-[0.8] uppercase italic">
+            <h1 className="text-5xl md:text-8xl lg:text-[10rem] font-black text-gray-900 tracking-tighter leading-[0.85] uppercase italic">
               {config.premio}
             </h1>
             
             <div className="flex flex-wrap items-start gap-x-12 gap-y-8 pt-8">
               <div className="space-y-2">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Participación</p>
-                <p className="text-2xl md:text-3xl font-black text-gray-900">{config.totalBoletas} <span className="text-gray-300">Boletas</span></p>
+                <p className="text-2xl md:text-3xl font-black text-gray-900">{config.totalBoletas} <span className="text-gray-900">Boletas</span></p>
               </div>
               <div className="space-y-2">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Inversión</p>
                 <p className="text-2xl md:text-3xl font-black text-gray-900">{formatCurrency(config.precioBoleta)}</p>
               </div>
               <div className="space-y-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Gran Sorteo</p>
-                <p className="text-2xl md:text-3xl font-black text-gray-900">{formatDate(config.fechaSorteo)}</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado</p>
+                <p className="text-2xl md:text-3xl font-black text-gray-900">{isFlexibleDate ? "Abierta" : "Fecha Confirmada"}</p>
               </div>
             </div>
 
@@ -161,8 +172,40 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Dynamic Raffle Date Banner */}
+        {!isFlexibleDate && config.fechaSorteo && (
+          <section className="mb-32 animate-in fade-in slide-in-from-top-4 duration-1000">
+            <div className="bg-amber-50 border-l-[12px] border-amber-400 p-8 md:p-12 rounded-r-[3rem] flex flex-col md:flex-row items-center gap-8 shadow-2xl shadow-amber-900/5 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12">
+                <Sparkles size={120} className="text-amber-600" />
+              </div>
+              <div className="w-20 h-20 bg-amber-400 text-white rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-lg shadow-amber-400/30 rotate-3">
+                <Calendar size={40} strokeWidth={2.5} />
+              </div>
+              <div className="space-y-2 text-center md:text-left relative z-10">
+                <div className="flex items-center justify-center md:justify-start gap-2 text-amber-600">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em]">¡Ya tenemos fecha confirmada!</span>
+                </div>
+                <h2 className="text-2xl md:text-4xl font-black text-zinc-900 leading-tight">
+                  El sorteo es el <span className="italic underline decoration-amber-300 underline-offset-8">{formatDate(config.fechaSorteo)}</span>
+                </h2>
+                <p className="text-sm font-bold text-amber-700 uppercase tracking-widest opacity-80">
+                  Jugamos con el premio mayor de la {config.loteria}
+                </p>
+              </div>
+              <Link 
+                href="#boleteria"
+                className="md:ml-auto bg-zinc-900 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-900/20 flex items-center gap-3 whitespace-nowrap"
+              >
+                Apartar mi boleta
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+          </section>
+        )}
+
         {/* ¿Cómo se juega? */}
-        <section className="mb-40">
+        <section className="mb-20 md:mb-32">
           <div className="bg-zinc-900 text-white rounded-[3rem] p-10 md:p-20 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12">
               <Star size={160} />
@@ -172,7 +215,7 @@ export default function Home() {
                 <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
                   <Info className="text-white" size={24} />
                 </div>
-                <h2 className="text-2xl font-black uppercase tracking-widest">¿Cómo se juega?</h2>
+                <h2 className="text-2xl font-black uppercase tracking-widest italic">¿Cómo se juega?</h2>
               </div>
               <p className="text-xl md:text-3xl font-medium leading-relaxed italic opacity-90">
                 Jugamos con las últimas <span className="text-amber-400 font-black">{config.cifrasJuego} cifras</span> del número ganador de la <span className="text-amber-400 font-black">{config.loteria}</span>. Si el número de tu boleta coincide exactamente, ¡ganás el premio!
@@ -181,11 +224,26 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Causa / ¿Para qué es la rifa? */}
+        <section className="mb-40">
+          <div className="bg-amber-50/50 border border-amber-100 p-10 md:p-16 rounded-[3rem] flex flex-col md:flex-row items-center gap-10">
+            <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-xl shadow-amber-900/5 rotate-2 shrink-0">
+              <GraduationCap className="text-amber-500" size={40} />
+            </div>
+            <div className="space-y-4 text-center md:text-left">
+              <h3 className="text-2xl font-black text-zinc-900 uppercase italic tracking-tight">¿Por qué participar?</h3>
+              <p className="text-lg md:text-xl font-medium text-zinc-600 leading-relaxed italic">
+                &quot;Esta rifa es para terminar estudios de ingeniería. Cada boleta es un granito de arena que nos ayuda muchísimo. <span className="text-zinc-900 font-black">¡Gracias por participar!</span>&quot;
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Grid Visualizer / Selector */}
-        <section className="mb-24 scroll-mt-32" id="boleteria">
+        <section className="mb-40 scroll-mt-32" id="boleteria">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-12 mb-16">
             <div className="space-y-4">
-              <h2 className="text-5xl font-black text-gray-900 tracking-tighter uppercase leading-none italic">Elige tus números</h2>
+              <h2 className="text-5xl font-black text-gray-900 tracking-tighter uppercase leading-none italic">Boletería</h2>
               <p className="text-gray-500 font-medium max-w-sm leading-relaxed">Toca los números que deseas directamente en la cuadrícula.</p>
             </div>
             <div className="flex flex-wrap gap-8 text-[9px] font-black uppercase tracking-[0.2em]">
@@ -247,6 +305,87 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Métodos de Pago */}
+        <section className="mb-40">
+          <div className="space-y-4 mb-12">
+            <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none italic">Métodos de pago</h2>
+            <p className="text-gray-500 font-medium max-w-sm">Transfiere el valor de tu boleta a cualquiera de estas cuentas.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Hiliana */}
+            <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+              <img src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" />
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular</p>
+                <p className="text-lg font-black text-gray-900 uppercase italic">Hiliana Ordoñez Lasso</p>
+              </div>
+              <div 
+                onClick={() => copyToClipboard("3138648345")}
+                className="flex items-center justify-between bg-zinc-50 p-4 rounded-2xl cursor-pointer hover:bg-zinc-100 transition-colors group relative"
+              >
+                <span className="text-xl font-black text-gray-900">3138648345</span>
+                <Copy size={18} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
+                {copiedText === "3138648345" && (
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg animate-in fade-in zoom-in">¡COPIADO!</div>
+                )}
+              </div>
+            </div>
+
+            {/* Juan */}
+            <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+              <img src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" />
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular</p>
+                <p className="text-lg font-black text-gray-900 uppercase italic">Juan Pantoja</p>
+              </div>
+              <div 
+                onClick={() => copyToClipboard("3213873880")}
+                className="flex items-center justify-between bg-zinc-50 p-4 rounded-2xl cursor-pointer hover:bg-zinc-100 transition-colors group relative"
+              >
+                <span className="text-xl font-black text-gray-900">3213873880</span>
+                <Copy size={18} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
+                {copiedText === "3213873880" && (
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg animate-in fade-in zoom-in">¡COPIADO!</div>
+                )}
+              </div>
+            </div>
+
+            {/* Bre-b */}
+            <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+              <img src="/bre-b.png" alt="Bre-b" width={80} height={28} className="object-contain" />
+              <div className="space-y-4">
+                <div 
+                  onClick={() => copyToClipboard("3213873880")}
+                  className="flex items-center justify-between bg-zinc-50 p-4 rounded-2xl cursor-pointer hover:bg-zinc-100 transition-colors group relative"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-zinc-400 uppercase">Celular</span>
+                    <span className="text-lg font-black text-gray-900">3213873880</span>
+                  </div>
+                  <Copy size={16} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
+                  {copiedText === "3213873880" && (
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg animate-in fade-in zoom-in">¡COPIADO!</div>
+                  )}
+                </div>
+                <div 
+                  onClick={() => copyToClipboard("@jupaor")}
+                  className="flex items-center justify-between bg-zinc-50 p-4 rounded-2xl cursor-pointer hover:bg-zinc-100 transition-colors group relative"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-zinc-400 uppercase">Llave Bre-b</span>
+                    <span className="text-lg font-black text-gray-900">@jupaor</span>
+                  </div>
+                  <Copy size={16} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
+                  {copiedText === "@jupaor" && (
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg animate-in fade-in zoom-in">¡COPIADO!</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Floating Cart Pill */}
         <div className={cn(
           "fixed bottom-8 left-1/2 -translate-x-1/2 z-[150] transition-all duration-500 ease-out transform",
@@ -270,14 +409,19 @@ export default function Home() {
           </div>
         </div>
 
-        <footer className="mt-48 pt-16 border-t border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-12">
-          <div className="flex items-center gap-4">
+        <footer className="mt-48 pt-16 border-t border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left pb-12">
+          <div className="flex flex-col md:flex-row items-center gap-4">
             <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-zinc-100">
               <span className="text-gray-900 font-black text-sm italic">S</span>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">SORTEA &copy; 2026</p>
+            <div className="flex flex-col">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">SORTEA &copy; 2026</p>
+              <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
+                Desarrollado por <span className="text-zinc-900">JUAN JOSE PANTOJA</span>
+              </p>
+            </div>
           </div>
-          <div className="flex gap-12 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-200">
+          <div className="flex gap-8 md:gap-12 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-200">
             <span>Premium System</span>
             <span>Seguridad Cifrada</span>
           </div>

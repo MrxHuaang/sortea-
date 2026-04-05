@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, onSnapshot, doc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { Config, Venta } from "@/types";
 import { cn, formatCurrency } from "@/lib/utils";
-import { Check, Loader2, ArrowRight, User, Phone, MapPin, MessageCircle, X, ChevronLeft, ShoppingCart, Copy, CheckCircle2 } from "lucide-react";
+import { Check, Loader2, ArrowRight, User, Phone, MapPin, MessageCircle, Clock, X, ChevronLeft, ShoppingCart, Copy, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 
@@ -22,9 +22,9 @@ export default function PurchasePage() {
   const [ciudad, setCiudad] = useState("");
   const [reserving, setReserving] = useState(false);
   
-  // Paso 3: Pago
+  // Paso 3: Pago & Confirmación
   const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [isProofSent, setIsProofSent] = useState(false);
+  const [isFinalConfirmation, setIsFinalConfirmation] = useState(false);
 
   useEffect(() => {
     // Recuperar boletas del Home
@@ -57,12 +57,6 @@ export default function PurchasePage() {
     navigator.clipboard.writeText(text);
     setCopiedText(text);
     setTimeout(() => setCopiedText(null), 2000);
-  };
-
-  const resetFlow = () => {
-    setStep(1);
-    setSelectedNumbers([]);
-    setIsProofSent(false);
   };
 
   const handleSelect = (num: number) => {
@@ -99,10 +93,13 @@ export default function PurchasePage() {
     }
   };
 
-  const handleWhatsAppClick = () => {
-    const text = `Hola, aparté las boletas ${selectedNumbers.sort((a,b) => a-b).map(n => String(n).padStart(config?.cifrasJuego || 3, '0')).join(", ")} a nombre de ${nombre}. Adjunto mi comprobante de pago.`;
+  const handleApartarClick = () => {
+    setIsFinalConfirmation(true);
+  };
+
+  const handleWhatsAppFinal = () => {
+    const text = `Hola, acabo de apartar mis boletas y adjunto mi comprobante de pago 🎟️`;
     window.open(`https://wa.me/573213873880?text=${encodeURIComponent(text)}`, "_blank");
-    setIsProofSent(true);
   };
 
   if (loading || !config) {
@@ -282,44 +279,83 @@ export default function PurchasePage() {
 
         {step === 3 && (
           <div className="animate-in fade-in zoom-in duration-500 max-w-2xl mx-auto">
-            {isProofSent ? (
-              <div className="text-center space-y-8 py-20 animate-in zoom-in">
-                <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8">
+            {isFinalConfirmation ? (
+              <div className="text-center space-y-12 py-10 animate-in zoom-in">
+                <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/10">
                   <CheckCircle2 size={64} />
                 </div>
                 <div className="space-y-4">
-                  <h2 className="text-4xl font-black text-gray-900 uppercase tracking-tight italic">¡Listo!</h2>
-                  <p className="text-gray-500 font-medium max-w-sm mx-auto">Tus números están apartados. Te confirmaremos por WhatsApp pronto.</p>
+                  <h2 className="text-5xl font-black text-gray-900 tracking-tighter uppercase italic">¡Todo listo! 🎉</h2>
+                  <p className="text-gray-500 font-medium max-w-sm mx-auto leading-relaxed">Tus números están apartados. Recuerda enviar tu comprobante de pago para confirmarlos.</p>
                 </div>
-                <div className="pt-8">
-                  <Link href="/" className="text-zinc-900 font-black uppercase tracking-widest text-xs border-b-2 border-zinc-900 pb-1">Volver al inicio</Link>
+
+                <div className="grid grid-cols-1 gap-4 text-left max-w-md mx-auto">
+                  <div className="bg-gray-50 p-6 rounded-3xl border border-zinc-100 flex items-center justify-between group cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => copyToClipboard("3138648345")}>
+                    <div className="space-y-1">
+                      <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Nequi • Hiliana Ordoñez</p>
+                      <p className="text-xl font-black text-gray-900">3138648345</p>
+                    </div>
+                    <Copy size={18} className="text-zinc-300 group-hover:text-zinc-900" />
+                    {copiedText === "3138648345" && <div className="absolute left-1/2 -translate-x-1/2 -top-8 bg-zinc-900 text-white text-[10px] font-black px-3 py-1 rounded-lg">¡COPIADO!</div>}
+                  </div>
+                  <div className="bg-gray-50 p-6 rounded-3xl border border-zinc-100 flex items-center justify-between group cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => copyToClipboard("3213873880")}>
+                    <div className="space-y-1">
+                      <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Nequi • Juan Pantoja</p>
+                      <p className="text-xl font-black text-gray-900">3213873880</p>
+                    </div>
+                    <Copy size={18} className="text-zinc-300 group-hover:text-zinc-900" />
+                    {copiedText === "3213873880" && <div className="absolute left-1/2 -translate-x-1/2 -top-8 bg-zinc-900 text-white text-[10px] font-black px-3 py-1 rounded-lg">¡COPIADO!</div>}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <button 
+                    onClick={handleWhatsAppFinal}
+                    className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 uppercase tracking-widest text-sm"
+                  >
+                    <MessageCircle size={24} />
+                    Enviar comprobante por WhatsApp
+                  </button>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest max-w-xs mx-auto">Una vez verifiquemos tu pago, tus boletas quedarán confirmadas. Puedes revisar tu estado en &apos;Mi Estado&apos;.</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-12">
                 <div className="text-center space-y-6">
                   <h1 className="text-6xl font-black text-gray-900 tracking-tighter uppercase leading-none italic">Pagar Ahora</h1>
-                  <p className="text-gray-400 font-medium max-w-sm mx-auto">Realiza la transferencia y reporta tu pago por WhatsApp.</p>
+                  <p className="text-gray-400 font-medium max-w-sm mx-auto">Realiza la transferencia a cualquiera de estas cuentas.</p>
                 </div>
 
                 <div className="bg-white border-2 border-zinc-900 p-6 md:p-12 rounded-[3.5rem] space-y-10 shadow-2xl relative overflow-hidden transition-all">
                   {/* Nequi */}
-                  <div className="space-y-6">
-                    <div className="flex flex-col items-center gap-4">
+                  <div className="space-y-8">
+                    <div className="flex flex-col items-center gap-6">
                       <img src="/nequi.png" alt="Nequi" width={100} height={35} className="object-contain" />
                       
-                      <div 
-                        onClick={() => copyToClipboard("3213873880")}
-                        className="group relative cursor-pointer bg-zinc-50 hover:bg-zinc-100 px-10 py-6 rounded-[2rem] border-2 border-zinc-900/5 transition-all active:scale-95 flex flex-col items-center gap-2 w-full max-w-xs"
-                      >
-                        <span className="text-4xl font-black text-gray-900 tracking-tighter">3213873880</span>
-                        <div className="flex items-center gap-2 text-zinc-400">
-                          <Copy size={14} />
-                          <span className="text-[9px] font-black uppercase tracking-widest">Toca para copiar</span>
+                      <div className="grid grid-cols-1 gap-4 w-full max-w-xs">
+                        <div 
+                          onClick={() => copyToClipboard("3138648345")}
+                          className="group relative cursor-pointer bg-zinc-50 hover:bg-zinc-100 p-6 rounded-[2rem] border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1"
+                        >
+                          <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Hiliana Ordoñez Lasso</p>
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl font-black text-gray-900">3138648345</span>
+                            <Copy size={16} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
+                          </div>
+                          {copiedText === "3138648345" && <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg">¡COPIADO!</div>}
                         </div>
-                        {copiedText === "3213873880" && (
-                          <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg animate-in fade-in zoom-in">¡COPIADO!</div>
-                        )}
+
+                        <div 
+                          onClick={() => copyToClipboard("3213873880")}
+                          className="group relative cursor-pointer bg-zinc-50 hover:bg-zinc-100 p-6 rounded-[2rem] border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1"
+                        >
+                          <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Juan Pantoja</p>
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl font-black text-gray-900">3213873880</span>
+                            <Copy size={16} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
+                          </div>
+                          {copiedText === "3213873880" && <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg">¡COPIADO!</div>}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -338,9 +374,7 @@ export default function PurchasePage() {
                           <span className="text-lg font-black text-gray-900">3213873880</span>
                           <Copy size={14} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
                         </div>
-                        {copiedText === "3213873880" && (
-                          <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg">¡COPIADO!</div>
-                        )}
+                        {copiedText === "3213873880" && <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg">¡COPIADO!</div>}
                       </div>
 
                       <div onClick={() => copyToClipboard("@jupaor")} className="group relative cursor-pointer bg-gray-50 hover:bg-zinc-100 p-5 rounded-2xl border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1">
@@ -349,25 +383,26 @@ export default function PurchasePage() {
                           <span className="text-lg font-black text-gray-900">@jupaor</span>
                           <Copy size={14} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
                         </div>
-                        {copiedText === "@jupaor" && (
-                          <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg">¡COPIADO!</div>
-                        )}
+                        {copiedText === "@jupaor" && <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg">¡COPIADO!</div>}
                       </div>
                     </div>
                   </div>
 
-                  {/* Botón WhatsApp */}
+                  {/* Apartar Boletas - Botón Verde */}
                   <div className="pt-6">
-                    <button onClick={handleWhatsAppClick} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-xl shadow-emerald-100 active:scale-95">
+                    <button 
+                      onClick={handleApartarClick}
+                      className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 uppercase tracking-widest text-sm"
+                    >
                       <MessageCircle size={24} />
-                      REPORTAR PAGO POR WHATSAPP
+                      Apartar mis boletas
                     </button>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-center gap-4 pt-8 opacity-60">
                   <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center leading-relaxed max-w-xs">
-                    Tus números quedan apartados hasta que confirmemos tu pago.
+                    Al hacer clic, tus números quedarán reservados y pasarás a la confirmación final.
                   </p>
                 </div>
               </div>

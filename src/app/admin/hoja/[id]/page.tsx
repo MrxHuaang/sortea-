@@ -6,7 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { Sheet, Config } from "@/types";
 import { use } from "react";
 import { formatCurrency, cn } from "@/lib/utils";
-import { Printer, ChevronLeft, ShieldCheck, Info } from "lucide-react";
+import { Printer, ChevronLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 export default function SheetPrintPage({ params }: { params: Promise<{ id: string }> }) {
@@ -40,16 +40,13 @@ export default function SheetPrintPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="min-h-screen bg-zinc-100 transition-colors print:bg-white p-0 sm:p-12">
       {/* Panel de Control (No se imprime) */}
-      <div className="max-w-5xl mx-auto flex items-center justify-between mb-8 px-6 sm:px-0 print:hidden">
+      <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between mb-8 px-6 sm:px-0 print:hidden gap-4">
         <Link href="/admin" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-colors">
           <ChevronLeft size={14} /> Volver al Panel
         </Link>
-        <div className="flex items-center gap-4">
-          <p className="text-[10px] font-bold text-zinc-400 italic">Optimizado: 20 boletas con reglas de juego</p>
-          <button onClick={() => window.print()} className="bg-zinc-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl hover:scale-105 transition-all active:scale-95 flex items-center gap-3">
-            <Printer size={18} /> Imprimir
-          </button>
-        </div>
+        <button onClick={() => window.print()} className="bg-zinc-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl hover:scale-105 transition-all active:scale-95 flex items-center gap-3">
+          <Printer size={18} /> Imprimir Hoja
+        </button>
       </div>
 
       {/* Área de Impresión */}
@@ -66,14 +63,14 @@ export default function SheetPrintPage({ params }: { params: Promise<{ id: strin
               style={{ 
                 width: '215.9mm', 
                 height: '279mm', 
-                padding: '10mm',
+                padding: '12mm', 
                 boxSizing: 'border-box',
                 backgroundColor: 'white'
               }}
             >
               
-              {/* Header Triple Optimizado (Altura ~14mm) */}
-              <header className="flex justify-between items-center mb-4 border-b-2 border-black pb-2" style={{ height: '14mm' }}>
+              {/* Header Triple Optimizado - Sin Footer para evitar superposiciones */}
+              <header className="flex justify-between items-center mb-5 border-b-2 border-black pb-2" style={{ height: '16mm' }}>
                 {/* Logo y Nombre */}
                 <div className="flex items-center gap-2 w-1/3">
                   <img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain" />
@@ -83,21 +80,23 @@ export default function SheetPrintPage({ params }: { params: Promise<{ id: strin
                   </div>
                 </div>
 
-                {/* Reglas de Confianza (Centro) */}
+                {/* Reglas y Aviso de Seguridad (Centro) */}
                 <div className="w-1/3 flex flex-col items-center border-x border-zinc-100 px-2 text-center">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <ShieldCheck size={8} className="text-zinc-900" />
-                    <span className="text-[7px] font-black uppercase tracking-widest">Sorteo Oficial</span>
-                  </div>
-                  <p className="text-[7px] font-medium leading-[1.1] italic text-zinc-600">
-                    Agotada la boletería jugará con la <span className="text-zinc-900 font-black">Lotería de Bogotá</span> (últimos 3 dígitos)
+                  <p className="text-[7px] font-medium leading-[1.1] italic text-zinc-600 mb-1">
+                    Juega con la <span className="text-zinc-900 font-black">Lotería de Bogotá</span> (últimos 3 dígitos)
                   </p>
+                  <span className="text-[6px] font-black uppercase tracking-widest text-zinc-400 border-t border-zinc-100 pt-1">
+                    Conserva tu boleta para reclamar
+                  </span>
                 </div>
 
-                {/* Datos Vendedor y Pago */}
+                {/* Datos Vendedor y Paginación */}
                 <div className="text-right w-1/3">
-                  <p className="text-[8px] font-black uppercase mb-0.5">Vendedor: {hoja.nombre}</p>
-                  <p className="text-[8px] font-bold opacity-70">{formatCurrency(config.precioBoleta)} • {config.nequiNumero}</p>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[6px] font-black text-zinc-300 uppercase mb-0.5">Página {index + 1} de {chunks.length}</span>
+                    <p className="text-[9px] font-black uppercase">{hoja.nombre}</p>
+                    <p className="text-[8px] font-bold opacity-70">{formatCurrency(config.precioBoleta)} • {config.nequiNumero}</p>
+                  </div>
                 </div>
               </header>
 
@@ -109,9 +108,7 @@ export default function SheetPrintPage({ params }: { params: Promise<{ id: strin
                     <div className="w-[30%] bg-zinc-900 flex flex-col items-center justify-center text-white border-r border-black relative">
                       <span className="text-[6px] font-black uppercase tracking-widest opacity-30 absolute top-1">No.</span>
                       <span className="text-xl font-black italic">{String(num).padStart(3, '0')}</span>
-                      <div className="absolute bottom-1 right-1 opacity-10">
-                        <img src="/logo.png" alt="" className="w-4 h-4 grayscale invert" />
-                      </div>
+                      <ShieldCheck size={8} className="opacity-20 absolute bottom-1" />
                     </div>
                     
                     {/* Datos (70%) */}
@@ -119,7 +116,7 @@ export default function SheetPrintPage({ params }: { params: Promise<{ id: strin
                       <div className="flex flex-col">
                         <div className="flex justify-between items-end">
                           <span className="text-[7px] font-black uppercase text-zinc-400">Comprador</span>
-                          <span className="text-[5px] font-bold text-zinc-200 uppercase">Boleta Física</span>
+                          <span className="text-[5px] font-bold text-zinc-200 uppercase">Original</span>
                         </div>
                         <div className="h-[8px] border-b-[0.5px] border-zinc-200"></div>
                       </div>
@@ -138,15 +135,6 @@ export default function SheetPrintPage({ params }: { params: Promise<{ id: strin
                   </div>
                 ))}
               </div>
-
-              {/* Footer Compacto */}
-              <footer className="absolute bottom-[10mm] left-[10mm] right-[10mm] border-t border-zinc-100 flex justify-between items-center opacity-30" style={{ height: '8mm' }}>
-                <p className="text-[6px] font-black uppercase tracking-[0.2em]">Página {index + 1} de {chunks.length} • Control Interno</p>
-                <div className="flex items-center gap-1">
-                  <Info size={6} />
-                  <p className="text-[6px] font-bold uppercase tracking-widest italic">Conserva tu boleta para reclamar el premio</p>
-                </div>
-              </footer>
             </div>
           );
         })}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { X, Save, Loader2 } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { Venta } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +48,7 @@ export default function EditVentaModal({ venta, onClose }: EditVentaModalProps) 
   };
 
   return (
-    <div className="fixed inset-0 bg-white/80 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 bg-white/80 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300 transition-colors">
       <div className="bg-white rounded-[2rem] shadow-2xl border border-zinc-100 w-full max-w-sm overflow-hidden">
         <div className="p-10 pb-0 flex justify-between items-start">
           <div className="space-y-1">

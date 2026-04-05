@@ -34,7 +34,7 @@ export default function PasswordModal({ onSuccess }: PasswordModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex items-center justify-center z-[100] p-4">
+    <div className="fixed inset-0 bg-white flex items-center justify-center z-[100] p-4 transition-colors">
       <div className="w-full max-w-sm p-10 text-center space-y-12">
         <div className="space-y-4">
           <div className="w-16 h-16 bg-zinc-900 rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-zinc-200">
@@ -57,7 +57,7 @@ export default function PasswordModal({ onSuccess }: PasswordModalProps) {
               placeholder="Contraseña Maestra"
               disabled={loading}
               autoFocus
-              className={`w-full px-6 py-5 rounded-3xl bg-zinc-50 border-2 transition-all outline-none font-black text-center tracking-[0.3em] disabled:opacity-50 text-sm ${
+              className={`w-full px-6 py-5 rounded-3xl bg-zinc-50 border-2 transition-all outline-none font-black text-center tracking-[0.3em] disabled:opacity-50 text-sm text-zinc-900 ${
                 error ? "border-red-500 animate-shake" : "border-transparent focus:border-zinc-900 focus:bg-white"
               }`}
             />

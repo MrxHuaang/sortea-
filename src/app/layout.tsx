@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${inter.className} bg-[#fafafa] text-zinc-900 antialiased min-h-screen selection:bg-zinc-200`}>
+      <body className={`${inter.className} bg-white text-gray-900 antialiased min-h-screen selection:bg-zinc-200 transition-colors duration-300`}>
         <SmoothScroll />
         {children}
       </body>

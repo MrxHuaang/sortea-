@@ -28,29 +28,30 @@ export default function VentaModal({ numero, onClose }: VentaModalProps) {
         nombre,
         contacto,
         pago,
+        tipo: "admin",
         creadoEn: serverTimestamp(),
       });
       onClose();
     } catch (error) {
       console.error("Error al registrar venta:", error);
-      alert("Hubo un error al registrar la venta");
+      alert("Error al procesar el registro");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-white/20">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-in fade-in duration-300">
+      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-white/20 transition-colors">
         <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
           <div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight">Comprar Boleta</h2>
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight">Registro Manual</h2>
             <div className="flex items-center gap-2 text-blue-600 mt-1">
               <Sparkles size={16} />
               <span className="text-sm font-black uppercase tracking-widest">Número #{numero.toString().padStart(2, "0")}</span>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-gray-200 rounded-2xl transition-all">
+          <button onClick={onClose} className="p-3 hover:bg-gray-200 rounded-2xl transition-all text-zinc-500">
             <X size={24} />
           </button>
         </div>
@@ -58,7 +59,7 @@ export default function VentaModal({ numero, onClose }: VentaModalProps) {
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Nombre Completo</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-2">Nombre del participante</label>
               <input
                 type="text"
                 required
@@ -70,13 +71,13 @@ export default function VentaModal({ numero, onClose }: VentaModalProps) {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Ciudad / WhatsApp</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-2">Contacto / Ciudad</label>
               <input
                 type="text"
                 required
                 value={contacto}
                 onChange={(e) => setContacto(e.target.value)}
-                placeholder="Ej: Pasto / 310..."
+                placeholder="Ej: 310... / Pasto"
                 className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition-all font-bold text-gray-800"
               />
             </div>

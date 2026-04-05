@@ -44,13 +44,25 @@ export default function PurchasePage() {
   }, [step, isFinalConfirmation]);
 
   useEffect(() => {
-    const saved = sessionStorage.getItem("preSelectedTickets");
+    // Try sessionStorage first (standard flow)
+    let saved = sessionStorage.getItem("preSelectedTickets");
+    
+    // Fallback to localStorage (accidental exit recovery)
+    if (!saved) {
+      saved = localStorage.getItem("selected_tickets_draft");
+    }
+
     if (saved) {
-      const tickets = JSON.parse(saved);
-      if (tickets.length > 0) {
-        setSelectedNumbers(tickets);
-        setStep(2); 
-        sessionStorage.removeItem("preSelectedTickets");
+      try {
+        const tickets = JSON.parse(saved);
+        if (tickets.length > 0) {
+          setSelectedNumbers(tickets);
+          setStep(2); 
+          sessionStorage.removeItem("preSelectedTickets");
+          localStorage.removeItem("selected_tickets_draft");
+        }
+      } catch (e) {
+        console.error("Error parsing tickets:", e);
       }
     }
 

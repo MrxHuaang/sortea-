@@ -34,6 +34,28 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
+  // Persistence: Load selected tickets from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("selected_tickets_draft");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setSelectedNumbers(parsed);
+      } catch (e) {
+        console.error("Error loading tickets draft:", e);
+      }
+    }
+  }, []);
+
+  // Persistence: Save selected tickets to localStorage whenever they change
+  useEffect(() => {
+    if (selectedNumbers.length > 0) {
+      localStorage.setItem("selected_tickets_draft", JSON.stringify(selectedNumbers));
+    } else {
+      localStorage.removeItem("selected_tickets_draft");
+    }
+  }, [selectedNumbers]);
+
   useEffect(() => {
     const unsubConfig = onSnapshot(doc(db, "config", "actual"), (docSnap) => {
       if (docSnap.exists()) {
@@ -81,6 +103,7 @@ export default function Home() {
 
   const goToPurchase = () => {
     sessionStorage.setItem("preSelectedTickets", JSON.stringify(selectedNumbers));
+    localStorage.removeItem("selected_tickets_draft");
     router.push("/comprar");
   };
 

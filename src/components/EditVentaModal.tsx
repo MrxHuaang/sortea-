@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { X, Save, Loader2 } from "lucide-react";
 import { Venta } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface EditVentaModalProps {
   venta: Venta | null;

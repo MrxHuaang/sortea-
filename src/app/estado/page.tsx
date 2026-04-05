@@ -14,6 +14,11 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
+  // Forzar scroll al inicio al cargar
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!celular) return;

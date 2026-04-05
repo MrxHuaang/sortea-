@@ -13,6 +13,11 @@ export default function WinnerPage() {
   const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Forzar scroll al inicio al cargar
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "config", "actual"), (docSnap) => {
       if (docSnap.exists()) {

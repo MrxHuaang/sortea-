@@ -26,6 +26,11 @@ export default function PurchasePage() {
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [isFinalConfirmation, setIsFinalConfirmation] = useState(false);
 
+  // Forzar scroll al inicio cuando cambie el paso o la confirmación
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [step, isFinalConfirmation]);
+
   useEffect(() => {
     // Recuperar boletas del Home
     const saved = sessionStorage.getItem("preSelectedTickets");

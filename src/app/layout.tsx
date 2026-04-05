@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import SmoothScroll from "@/components/SmoothScroll";
+import { Analytics } from "@vercel/analytics/react"
 
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700", "800", "900"] });
 
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-white text-gray-900 antialiased min-h-screen selection:bg-zinc-200 transition-colors duration-300`}>
         <SmoothScroll />
         {children}
+        <Analytics />
       </body>
     </html>
   );

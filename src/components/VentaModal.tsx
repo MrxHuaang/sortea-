@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { X, Check, Loader2, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface VentaModalProps {
   numero: number | null;
@@ -15,18 +16,38 @@ export default function VentaModal({ numero, onClose }: VentaModalProps) {
   const [contacto, setContacto] = useState("");
   const [pago, setPago] = useState<"pagado" | "pendiente">("pendiente");
   const [loading, setLoading] = useState(false);
+  
+  const [errors, setErrors] = useState<{ nombre?: string; contacto?: string }>({});
 
   if (numero === null) return null;
 
+  const validate = () => {
+    const newErrors: typeof errors = {};
+    
+    // Validar nombre: min 5 chars, solo letras y espacios
+    if (nombre.trim().length < 5 || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(nombre)) {
+      newErrors.nombre = "Ingresa el nombre completo (solo letras)";
+    }
+
+    // Validar contacto: debe contener un celular de 10 dígitos que empiece por 3
+    if (!/3\d{9}/.test(contacto)) {
+      newErrors.contacto = "Debe incluir un celular válido (10 dígitos, empieza por 3)";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!validate()) return;
 
+    setLoading(true);
     try {
       await addDoc(collection(db, "ventas"), {
         numero,
-        nombre,
-        contacto,
+        nombre: nombre.trim(),
+        contacto: contacto.trim(),
         pago,
         tipo: "admin",
         creadoEn: serverTimestamp(),
@@ -45,10 +66,10 @@ export default function VentaModal({ numero, onClose }: VentaModalProps) {
       <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-white/20 transition-colors">
         <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
           <div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight">Registro Manual</h2>
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight italic">Registro Manual</h2>
             <div className="flex items-center gap-2 text-blue-600 mt-1">
               <Sparkles size={16} />
-              <span className="text-sm font-black uppercase tracking-widest">Número #{numero.toString().padStart(2, "0")}</span>
+              <span className="text-sm font-black uppercase tracking-widest">Número #{numero.toString().padStart(3, "0")}</span>
             </div>
           </div>
           <button onClick={onClose} className="p-3 hover:bg-gray-200 rounded-2xl transition-all text-zinc-500">
@@ -64,22 +85,36 @@ export default function VentaModal({ numero, onClose }: VentaModalProps) {
                 type="text"
                 required
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                onChange={(e) => {
+                  setNombre(e.target.value);
+                  if (errors.nombre) setErrors({ ...errors, nombre: undefined });
+                }}
                 placeholder="Ej: Juan Pérez"
-                className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition-all font-bold text-gray-800"
+                className={cn(
+                  "w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 outline-none transition-all font-bold text-gray-800",
+                  errors.nombre ? "border-red-500 bg-red-50" : "border-transparent focus:border-blue-500 focus:bg-white"
+                )}
               />
+              {errors.nombre && <p className="text-red-500 text-[9px] font-bold mt-2 ml-2 uppercase italic">{errors.nombre}</p>}
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-2">Contacto / Ciudad</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-2">Celular / Ciudad</label>
               <input
                 type="text"
                 required
                 value={contacto}
-                onChange={(e) => setContacto(e.target.value)}
-                placeholder="Ej: 310... / Pasto"
-                className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition-all font-bold text-gray-800"
+                onChange={(e) => {
+                  setContacto(e.target.value);
+                  if (errors.contacto) setErrors({ ...errors, contacto: undefined });
+                }}
+                placeholder="Ej: 3101234567 / Pasto"
+                className={cn(
+                  "w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 outline-none transition-all font-bold text-gray-800",
+                  errors.contacto ? "border-red-500 bg-red-50" : "border-transparent focus:border-blue-500 focus:bg-white"
+                )}
               />
+              {errors.contacto && <p className="text-red-500 text-[9px] font-bold mt-2 ml-2 uppercase italic">{errors.contacto}</p>}
             </div>
           </div>
 

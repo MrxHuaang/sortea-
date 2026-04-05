@@ -151,12 +151,10 @@ export default function AdminPage() {
     <div className="min-h-screen bg-white flex flex-col lg:flex-row transition-colors">
       {/* Mobile Header */}
       <div className="lg:hidden h-20 bg-white border-b border-zinc-100 px-6 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center">
-            <span className="text-white font-black text-xs italic">S</span>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+            <h1 className="text-xs font-black text-zinc-900 tracking-widest uppercase">Admin</h1>
           </div>
-          <h1 className="text-xs font-black text-zinc-900 tracking-widest uppercase">Admin</h1>
-        </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-zinc-900 transition-all">
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>

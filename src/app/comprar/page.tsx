@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, doc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { Config, Venta } from "@/types";
@@ -22,14 +22,17 @@ export default function PurchasePage() {
   const [ciudad, setCiudad] = useState("");
   const [reserving, setReserving] = useState(false);
   
+  // Errores de validación
+  const [errors, setErrors] = useState<{ nombre?: string; celular?: string; ciudad?: string }>({});
+  
+  // Refs para scroll
+  const nombreRef = useRef<HTMLDivElement>(null);
+  const celularRef = useRef<HTMLDivElement>(null);
+  const ciudadRef = useRef<HTMLDivElement>(null);
+
   // Paso 3: Pago & Confirmación
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [isFinalConfirmation, setIsFinalConfirmation] = useState(false);
-
-  // Forzar scroll al inicio cuando cambie el paso o la confirmación
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [step, isFinalConfirmation]);
 
   useEffect(() => {
     // Recuperar boletas del Home
@@ -58,6 +61,34 @@ export default function PurchasePage() {
     };
   }, []);
 
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+    
+    // Validar nombre: min 5 chars, solo letras y espacios
+    if (nombre.trim().length < 5 || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(nombre)) {
+      newErrors.nombre = "Ingresa tu nombre completo";
+    }
+
+    // Validar celular: 10 dígitos, empieza por 3
+    if (!/^3\d{9}$/.test(celular)) {
+      newErrors.celular = "Ingresa un número de celular válido (10 dígitos, empieza por 3)";
+    }
+
+    // Validar ciudad: min 3 chars, solo letras y espacios
+    if (ciudad.trim().length < 3 || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(ciudad)) {
+      newErrors.ciudad = "Ingresa una ciudad válida";
+    }
+
+    setErrors(newErrors);
+
+    // Scroll al primer error
+    if (newErrors.nombre) nombreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    else if (newErrors.celular) celularRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    else if (newErrors.ciudad) ciudadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    return Object.keys(newErrors).length === 0;
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedText(text);
@@ -74,6 +105,8 @@ export default function PurchasePage() {
 
   const handleReserve = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
     setReserving(true);
     try {
       const batch = writeBatch(db);
@@ -81,8 +114,8 @@ export default function PurchasePage() {
         const ventaRef = doc(collection(db, "ventas"));
         batch.set(ventaRef, {
           numero: num,
-          nombre,
-          contacto: `${celular} / ${ciudad}`,
+          nombre: nombre.trim(),
+          contacto: `${celular} / ${ciudad.trim()}`,
           pago: "pendiente",
           tipo: "online",
           creadoEn: serverTimestamp()
@@ -90,6 +123,7 @@ export default function PurchasePage() {
       });
       await batch.commit();
       setStep(3);
+      window.scrollTo({ top: 0, behavior: 'instant' });
     } catch (error) {
       console.error("Error al reservar:", error);
       alert("Error al procesar tu solicitud.");
@@ -100,6 +134,7 @@ export default function PurchasePage() {
 
   const handleApartarClick = () => {
     setIsFinalConfirmation(true);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleWhatsAppFinal = () => {
@@ -174,7 +209,7 @@ export default function PurchasePage() {
                   <p className="text-sm font-black tracking-tight">{formatCurrency(selectedNumbers.length * config.precioBoleta)} COP</p>
                 </div>
                 <button 
-                  onClick={() => setStep(2)}
+                  onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:gap-4 transition-all"
                 >
                   Ver resumen
@@ -188,7 +223,7 @@ export default function PurchasePage() {
         {step === 2 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-500">
             <button 
-              onClick={() => setStep(1)}
+              onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: 'instant' }); }}
               className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-zinc-900 mb-12 transition-colors"
             >
               <ChevronLeft size={14} />
@@ -229,39 +264,62 @@ export default function PurchasePage() {
 
               <form onSubmit={handleReserve} className="space-y-8">
                 <div className="space-y-6">
-                  <div>
+                  <div ref={nombreRef}>
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Nombre Completo</label>
                     <input
                       type="text"
                       required
                       value={nombre}
-                      onChange={(e) => setNombre(e.target.value)}
+                      onChange={(e) => {
+                        setNombre(e.target.value);
+                        if (errors.nombre) setErrors({ ...errors, nombre: undefined });
+                      }}
                       placeholder="Ej: Juan Pérez"
-                      className="w-full px-8 py-5 rounded-[1.5rem] bg-gray-50 border-2 border-transparent focus:border-zinc-900 focus:bg-white outline-none transition-all font-bold text-gray-900"
+                      className={cn(
+                        "w-full px-8 py-5 rounded-[1.5rem] bg-gray-50 border-2 outline-none transition-all font-bold text-gray-900",
+                        errors.nombre ? "border-red-500 bg-red-50" : "border-transparent focus:border-zinc-900 focus:bg-white"
+                      )}
                     />
+                    {errors.nombre && <p className="text-red-500 text-[10px] font-bold mt-2 ml-2 uppercase italic">{errors.nombre}</p>}
                   </div>
-                  <div>
+                  
+                  <div ref={celularRef}>
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Celular / WhatsApp</label>
                     <input
                       type="tel"
                       required
                       value={celular}
-                      onChange={(e) => setCelular(e.target.value.replace(/\D/g, ""))}
+                      onChange={(e) => {
+                        setCelular(e.target.value.replace(/\D/g, ""));
+                        if (errors.celular) setErrors({ ...errors, celular: undefined });
+                      }}
                       placeholder="Ej: 3101234567"
                       maxLength={10}
-                      className="w-full px-8 py-5 rounded-[1.5rem] bg-gray-50 border-2 border-transparent focus:border-zinc-900 focus:bg-white outline-none transition-all font-bold text-gray-900"
+                      className={cn(
+                        "w-full px-8 py-5 rounded-[1.5rem] bg-gray-50 border-2 outline-none transition-all font-bold text-gray-900",
+                        errors.celular ? "border-red-500 bg-red-50" : "border-transparent focus:border-zinc-900 focus:bg-white"
+                      )}
                     />
+                    {errors.celular && <p className="text-red-500 text-[10px] font-bold mt-2 ml-2 uppercase italic">{errors.celular}</p>}
                   </div>
-                  <div>
+
+                  <div ref={ciudadRef}>
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Ciudad</label>
                     <input
                       type="text"
                       required
                       value={ciudad}
-                      onChange={(e) => setCiudad(e.target.value)}
+                      onChange={(e) => {
+                        setCiudad(e.target.value);
+                        if (errors.ciudad) setErrors({ ...errors, ciudad: undefined });
+                      }}
                       placeholder="Ej: Pasto, Nariño"
-                      className="w-full px-8 py-5 rounded-[1.5rem] bg-gray-50 border-2 border-transparent focus:border-zinc-900 focus:bg-white outline-none transition-all font-bold text-gray-900"
+                      className={cn(
+                        "w-full px-8 py-5 rounded-[1.5rem] bg-gray-50 border-2 outline-none transition-all font-bold text-gray-900",
+                        errors.ciudad ? "border-red-500 bg-red-50" : "border-transparent focus:border-zinc-900 focus:bg-white"
+                      )}
                     />
+                    {errors.ciudad && <p className="text-red-500 text-[10px] font-bold mt-2 ml-2 uppercase italic">{errors.ciudad}</p>}
                   </div>
                 </div>
 

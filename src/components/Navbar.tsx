@@ -39,9 +39,11 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 active:scale-95">
-              <span className="text-white font-black text-lg italic">S</span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="SORTEA Logo" 
+              className="w-10 h-10 object-contain transition-transform group-hover:scale-105 active:scale-95" 
+            />
             <span className="text-sm font-black text-gray-900 uppercase tracking-[0.4em] hidden sm:block italic">SORTEA</span>
           </Link>
 

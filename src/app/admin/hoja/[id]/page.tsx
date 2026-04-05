@@ -75,9 +75,7 @@ export default function SheetPrintPage({ params }: { params: Promise<{ id: strin
               {/* Header Compacto (Altura ~12mm) */}
               <header className="flex justify-between items-center mb-4 border-b-2 border-black pb-2" style={{ height: '12mm' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 bg-black rounded flex items-center justify-center">
-                    <span className="text-white font-black text-sm italic">S</span>
-                  </div>
+                  <img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain" />
                   <div>
                     <h1 className="text-sm font-black uppercase tracking-tighter leading-none italic">{config.premio}</h1>
                     <p className="text-[7px] font-black uppercase tracking-[0.2em] text-zinc-400">Premium System Oficial</p>

@@ -389,7 +389,7 @@ export default function PurchasePage() {
                   {/* Nequi */}
                   <div className="space-y-6">
                     <div className="flex flex-col items-center gap-4">
-                      <img src="/nequi.png" alt="Nequi" width={100} height={35} className="object-contain" />
+                      <img src="/nequi.png" alt="Nequi" width={100} height={35} className="object-contain" style={{ height: 'auto' }} />
                       
                       <div className="grid grid-cols-1 gap-4 w-full max-w-xs">
                         <div 
@@ -422,7 +422,7 @@ export default function PurchasePage() {
                   {/* Bre-b */}
                   <div className="pt-10 border-t border-zinc-100 space-y-8">
                     <div className="flex flex-col items-center gap-4">
-                      <img src="/bre-b.png" alt="Bre-b" width={100} height={35} className="object-contain" />
+                      <img src="/bre-b.png" alt="Bre-b" width={100} height={35} className="object-contain" style={{ height: 'auto' }} />
                       <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">También disponible en Bre-b</p>
                     </div>
                     

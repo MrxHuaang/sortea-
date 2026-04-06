@@ -372,7 +372,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Hiliana */}
             <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
-              <Image src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" />
+              <Image src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" style={{ height: 'auto' }} />
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular</p>
                 <p className="text-lg font-black text-gray-900 uppercase italic">Hiliana Ordoñez Lasso</p>
@@ -391,7 +391,7 @@ export default function Home() {
 
             {/* Juan */}
             <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
-              <Image src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" />
+              <Image src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" style={{ height: 'auto' }} />
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular</p>
                 <p className="text-lg font-black text-gray-900 uppercase italic">Juan Pantoja</p>
@@ -410,7 +410,7 @@ export default function Home() {
 
             {/* Bre-b */}
             <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
-              <Image src="/bre-b.png" alt="Bre-b" width={80} height={28} className="object-contain" />
+              <Image src="/bre-b.png" alt="Bre-b" width={80} height={28} className="object-contain" style={{ height: 'auto' }} />
               <div className="space-y-4">
                 <div 
                   onClick={() => copyToClipboard("3213873880")}

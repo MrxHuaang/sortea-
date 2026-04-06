@@ -8,6 +8,7 @@ import { use } from "react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Printer, ChevronLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function SheetPrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -30,7 +31,7 @@ export default function SheetPrintPage({ params }: { params: Promise<{ id: strin
   if (loading || !hoja || !config) return null;
 
   const itemsPerPage = 20;
-  const sortedTickets = [...hoja.boletas].sort((a, b) => a - b);
+  const sortedTickets = [...(hoja.boletas || hoja.numeros || hoja["numeros boletas"] || [])].sort((a, b) => a - b);
   const chunks: number[][] = [];
   
   for (let i = 0; i < sortedTickets.length; i += itemsPerPage) {
@@ -73,7 +74,7 @@ export default function SheetPrintPage({ params }: { params: Promise<{ id: strin
                 <header className="flex justify-between items-center mb-3 border-b-2 border-black pb-2" style={{ height: '15mm' }}>
                   {/* Logo y Nombre */}
                   <div className="flex items-center gap-2 w-1/3">
-                    <img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain" />
+                    <Image src="/logo.png" alt="Logo" width={28} height={28} className="object-contain" />
                     <div>
                       <h1 className="text-[11px] font-black uppercase tracking-tighter leading-none italic">{config.premio}</h1>
                       <p className="text-[6px] font-black uppercase tracking-[0.2em] text-zinc-400">Premium System</p>

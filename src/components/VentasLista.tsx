@@ -75,7 +75,11 @@ export default function VentasLista({ ventas }: VentasListaProps) {
   };
 
   const shareWhatsApp = (venta: Venta) => {
-    const text = `¡Hola ${venta.nombre}! 👋\n\nConfirmamos tu boleta #${formatNumber(venta.numero)} como PAGADA. ¡Gracias! 🍀`;
+    const nums = [
+      ...(venta.numero !== undefined ? [venta.numero] : []),
+      ...(venta["numeros boletas"] || [])
+    ].sort((a,b) => a-b);
+    const text = `¡Hola ${venta.nombre}! 👋\n\nConfirmamos tu boleta #${nums.map(n => formatNumber(n)).join(', ')} como PAGADA. ¡Gracias! 🍀`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -93,14 +97,20 @@ export default function VentasLista({ ventas }: VentasListaProps) {
 
   const exportToCSV = () => {
     const headers = ["Boleta", "Participante", "Contacto", "Estado", "Tipo", "Fecha"];
-    const rows = ventasFiltradas.map(v => [
-      formatNumber(v.numero),
-      v.nombre,
-      v.contacto,
-      v.pago.toUpperCase(),
-      v.tipo || "online",
-      v.creadoEn?.toDate().toLocaleDateString() || ""
-    ]);
+    const rows = ventasFiltradas.map(v => {
+      const nums = [
+        ...(v.numero !== undefined ? [v.numero] : []),
+        ...(v["numeros boletas"] || [])
+      ].sort((a,b) => a-b);
+      return [
+        nums.map(n => formatNumber(n)).join(' - '),
+        v.nombre,
+        v.contacto,
+        v.pago.toUpperCase(),
+        v.tipo || "online",
+        v.creadoEn?.toDate().toLocaleDateString() || ""
+      ];
+    });
     const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -112,12 +122,20 @@ export default function VentasLista({ ventas }: VentasListaProps) {
   const ventasFiltradas = ventas
     .filter((v) => (filtroPago === "todas" ? true : v.pago === filtroPago))
     .filter((v) => (filtroTipo === "todos" ? true : v.tipo === filtroTipo))
-    .filter((v) => 
-      v.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
-      v.numero.toString().includes(busqueda) ||
-      v.contacto.toLowerCase().includes(busqueda.toLowerCase())
-    )
-    .sort((a, b) => a.numero - b.numero);
+    .filter((v) => {
+      const nums = [
+        ...(v.numero !== undefined ? [v.numero] : []),
+        ...(v["numeros boletas"] || [])
+      ];
+      return v.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
+             nums.some(n => n.toString().includes(busqueda)) ||
+             v.contacto.toLowerCase().includes(busqueda.toLowerCase());
+    })
+    .sort((a, b) => {
+      const aNum = a.numero !== undefined ? a.numero : (a["numeros boletas"]?.[0] || 0);
+      const bNum = b.numero !== undefined ? b.numero : (b["numeros boletas"]?.[0] || 0);
+      return aNum - bNum;
+    });
 
   return (
     <div className="bg-white rounded-[2rem] md:rounded-[3rem] border border-zinc-100 overflow-hidden shadow-sm transition-colors">
@@ -214,8 +232,14 @@ export default function VentasLista({ ventas }: VentasListaProps) {
                     </button>
                   </td>
                   <td className="px-8 py-6">
-                    <div className="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-zinc-900/10 italic">
-                      {formatNumber(venta.numero)}
+                    <div className="flex flex-wrap gap-2">
+                      {[...(venta.numero !== undefined ? [venta.numero] : []), ...(venta["numeros boletas"] || [])]
+                        .sort((a,b) => a-b)
+                        .map(n => (
+                          <div key={n} className="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-zinc-900/10 italic">
+                            {formatNumber(n)}
+                          </div>
+                      ))}
                     </div>
                   </td>
                   <td className="px-8 py-6">

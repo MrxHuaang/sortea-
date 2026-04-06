@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, doc, runTransaction, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, doc, runTransaction, serverTimestamp, getDocs } from "firebase/firestore";
 import { Config, Venta } from "@/types";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Check, Loader2, ArrowRight, MessageCircle, X, ChevronLeft, ShoppingCart, Copy, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import Image from "next/image";
 import { z } from "zod";
 import { motion } from "framer-motion";
 
@@ -110,24 +111,30 @@ export default function PurchasePage() {
 
     try {
       await runTransaction(db, async (transaction) => {
+        // Obtener todas las ventas actuales para verificar contra los números seleccionados
+        const ventasSnapshot = await getDocs(collection(db, "ventas"));
+        const ventasData = ventasSnapshot.docs.map(d => d.data() as Venta);
+
         for (const num of selectedNumbers) {
-          const q = query(collection(db, "ventas"), where("numero", "==", num));
-          const snapshot = await getDocs(q);
-          if (!snapshot.empty) {
-            throw new Error(`La boleta #${String(num).padStart(config?.cifrasJuego || 3, '0')} ya ha sido apartada.`);
+          const estaOcupada = ventasData.some(v => 
+            v.numero === num || 
+            (v["numeros boletas"] && Array.isArray(v["numeros boletas"]) && v["numeros boletas"].includes(num))
+          );
+
+          if (estaOcupada) {
+            throw new Error(`La boleta #${String(num).padStart(config?.cifrasJuego || 3, '0')} ya no está disponible.`);
           }
         }
 
-        selectedNumbers.forEach(num => {
-          const newVentaRef = doc(collection(db, "ventas"));
-          transaction.set(newVentaRef, {
-            numero: num,
-            nombre,
-            contacto: `${celular} / ${ciudad}`,
-            pago: "pendiente",
-            tipo: "online",
-            creadoEn: serverTimestamp()
-          });
+        // Crear un solo documento con el array de números (Tu formato actual)
+        const newVentaRef = doc(collection(db, "ventas"));
+        transaction.set(newVentaRef, {
+          "numeros boletas": selectedNumbers,
+          nombre,
+          contacto: `${celular} / ${ciudad}`,
+          pago: "pendiente",
+          tipo: "online",
+          creadoEn: serverTimestamp()
         });
       });
 
@@ -448,7 +455,7 @@ export default function PurchasePage() {
                   {/* Nequi */}
                   <div className="space-y-6">
                     <div className="flex flex-col items-center gap-4">
-                      <img src="/nequi.png" alt="Nequi" width={100} height={35} className="object-contain" />
+                      <Image src="/nequi.png" alt="Nequi" width={100} height={35} className="object-contain" />
                       
                       <div className="grid grid-cols-1 gap-4 w-full max-w-xs">
                         <div 
@@ -481,7 +488,7 @@ export default function PurchasePage() {
                   {/* Bre-b */}
                   <div className="pt-10 border-t border-zinc-100 space-y-8">
                     <div className="flex flex-col items-center gap-4">
-                      <img src="/bre-b.png" alt="Bre-b" width={100} height={35} className="object-contain" />
+                      <Image src="/bre-b.png" alt="Bre-b" width={100} height={35} className="object-contain" />
                       <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">También disponible en Bre-b</p>
                     </div>
                     
@@ -514,7 +521,7 @@ export default function PurchasePage() {
                     {showQR && (
                       <div className="pt-6 animate-in slide-in-from-top-2 duration-300">
                         <div className="bg-gray-50 rounded-[2rem] flex items-center justify-center p-6 border border-zinc-100 mx-auto w-fit">
-                          <img src="/qr-nequi.jpg" alt="QR Nequi" width={200} height={200} className="rounded-xl shadow-lg" />
+                          <Image src="/qr-nequi.jpg" alt="QR Nequi" width={200} height={200} className="rounded-xl shadow-lg" />
                         </div>
                       </div>
                     )}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, orderBy, writeBatch, doc, serverTimestamp, getDocs, where } from "firebase/firestore";
-import { Sheet } from "@/types";
+import { Sheet, Venta } from "@/types";
 import { 
   FileText, 
   Plus, 
@@ -19,9 +19,10 @@ import Link from "next/link";
 
 interface SheetsManagerProps {
   totalBoletas: number;
+  ventas: Venta[];
 }
 
-export default function SheetsManager({ totalBoletas }: SheetsManagerProps) {
+export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerProps) {
   const [hojas, setHojas] = useState<Sheet[]>([]);
   const [nombre, setNombre] = useState("");
   const [cantidad, setCantidad] = useState(20);
@@ -48,7 +49,15 @@ export default function SheetsManager({ totalBoletas }: SheetsManagerProps) {
     try {
       const q = query(collection(db, "ventas"));
       const snapshot = await getDocs(q);
-      const numerosVendidos = new Set(snapshot.docs.map(d => d.data().numero));
+      const ventasData = snapshot.docs.map(d => d.data());
+      
+      const numerosVendidos = new Set<number>();
+      ventasData.forEach((v: any) => {
+        if (v.numero !== undefined) numerosVendidos.add(v.numero);
+        if (v["numeros boletas"] && Array.isArray(v["numeros boletas"])) {
+          v["numeros boletas"].forEach((n: number) => numerosVendidos.add(n));
+        }
+      });
 
       const numerosDisponibles = Array.from({ length: totalBoletas }, (_, i) => i)
         .filter(n => !numerosVendidos.has(n));
@@ -68,22 +77,22 @@ export default function SheetsManager({ totalBoletas }: SheetsManagerProps) {
       const batch = writeBatch(db);
       const sheetRef = doc(collection(db, "hojas"));
       
+      // GUARDAR CON EL NOMBRE CORRECTO: "numeros boletas"
       batch.set(sheetRef, {
         nombre,
-        numeros: seleccionados,
+        "numeros boletas": seleccionados,
         creadoEn: serverTimestamp()
       });
 
-      seleccionados.forEach(num => {
-        const ventaRef = doc(collection(db, "ventas"));
-        batch.set(ventaRef, {
-          numero: num,
-          nombre: `Hoja: ${nombre}`,
-          contacto: "Venta Física",
-          pago: "pagado",
-          tipo: "fisica",
-          creadoEn: serverTimestamp()
-        });
+      // Registrar también en la colección ventas para que aparezcan como ocupadas
+      const ventaRef = doc(collection(db, "ventas"));
+      batch.set(ventaRef, {
+        "numeros boletas": seleccionados,
+        nombre: `Hoja: ${nombre}`,
+        contacto: "Venta Física",
+        pago: "pagado",
+        tipo: "fisica",
+        creadoEn: serverTimestamp()
       });
 
       await batch.commit();
@@ -97,16 +106,25 @@ export default function SheetsManager({ totalBoletas }: SheetsManagerProps) {
     }
   };
 
-  const eliminarHoja = async (id: string, numeros: number[]) => {
+  const eliminarHoja = async (id: string, sheet: Sheet) => {
     if (!confirm("¿Eliminar esta hoja? Los números volverán a estar disponibles.")) return;
+
+    const numeros = sheet["numeros boletas"] || sheet.numeros || sheet.boletas || [];
 
     try {
       const batch = writeBatch(db);
       batch.delete(doc(db, "hojas", id));
 
-      const q = query(collection(db, "ventas"), where("numero", "in", numeros));
+      // Buscar y eliminar el registro de venta asociado
+      const q = query(collection(db, "ventas"), where("nombre", "==", `Hoja: ${sheet.nombre}`));
       const snapshot = await getDocs(q);
-      snapshot.docs.forEach(d => batch.delete(d.ref));
+      snapshot.docs.forEach(d => {
+        // Verificar que coincidan los números para mayor seguridad
+        const vNums = d.data()["numeros boletas"] || [];
+        if (JSON.stringify(vNums.sort()) === JSON.stringify(numeros.sort())) {
+          batch.delete(d.ref);
+        }
+      });
 
       await batch.commit();
     } catch (error) {
@@ -124,6 +142,11 @@ export default function SheetsManager({ totalBoletas }: SheetsManagerProps) {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredHojas.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredHojas.length / itemsPerPage);
+
+  // Helper para obtener los números sin importar el nombre del campo
+  const getNumbers = (hoja: Sheet) => {
+    return hoja["numeros boletas"] || hoja.numeros || hoja.boletas || [];
+  };
 
   return (
     <div className="space-y-12">
@@ -148,8 +171,8 @@ export default function SheetsManager({ totalBoletas }: SheetsManagerProps) {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-        {/* Formulario Fijo */}
-        <div className="lg:col-span-1 lg:sticky lg:top-8 z-20">
+        {/* Formulario */}
+        <div className="lg:col-span-1">
           <form onSubmit={generarHoja} className="bg-zinc-50 p-10 rounded-[2.5rem] border border-zinc-100 shadow-xl shadow-zinc-100/50 space-y-8 transition-colors">
             <div className="space-y-2">
               <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Nueva Asignación</h3>
@@ -197,7 +220,7 @@ export default function SheetsManager({ totalBoletas }: SheetsManagerProps) {
           </form>
         </div>
 
-        {/* Lista de Hojas Scrolleable */}
+        {/* Lista de Hojas */}
         <div className="lg:col-span-2 space-y-6">
           {hojas.length === 0 ? (
             <div className="bg-zinc-50 border-2 border-dashed border-zinc-100 rounded-[3rem] p-20 text-center space-y-4">
@@ -206,45 +229,48 @@ export default function SheetsManager({ totalBoletas }: SheetsManagerProps) {
             </div>
           ) : (
             <>
-              <div className="space-y-6 max-h-[calc(100vh-200px)] lg:overflow-y-auto pr-4 custom-scrollbar">
-                {currentItems.map((hoja) => (
-                  <div key={hoja.id} className="group bg-white border border-zinc-100 p-8 rounded-[2.5rem] hover:shadow-2xl hover:shadow-zinc-100 transition-all">
-                    <div className="flex items-start justify-between gap-6 mb-8">
-                      <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 bg-zinc-900 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-zinc-900/10">
-                          <FileText size={24} />
+              <div className="space-y-6">
+                {currentItems.map((hoja) => {
+                  const numeros = getNumbers(hoja);
+                  return (
+                    <div key={hoja.id} className="group bg-white border border-zinc-100 p-8 rounded-[2.5rem] hover:shadow-2xl hover:shadow-zinc-100 transition-all">
+                      <div className="flex items-start justify-between gap-6 mb-8">
+                        <div className="flex items-center gap-6">
+                          <div className="w-14 h-14 bg-zinc-900 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-zinc-900/10">
+                            <FileText size={24} />
+                          </div>
+                          <div>
+                            <h4 className="text-xl font-black text-zinc-900 uppercase italic">{hoja.nombre}</h4>
+                            <p className="text-[10px] font-black text-zinc-300 uppercase tracking-widest mt-1">{numeros.length} Boletas Asignadas</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-xl font-black text-zinc-900 uppercase italic">{hoja.nombre}</h4>
-                          <p className="text-[10px] font-black text-zinc-300 uppercase tracking-widest mt-1">{(hoja.numeros?.length || 0)} Boletas Asignadas</p>
+                        <div className="flex items-center gap-2">
+                          <Link 
+                            href={`/admin/hoja/${hoja.id}`}
+                            target="_blank"
+                            className="p-4 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-2xl transition-all cursor-pointer"
+                          >
+                            <Printer size={20} />
+                          </Link>
+                          <button 
+                            onClick={() => eliminarHoja(hoja.id, hoja)}
+                            className="p-4 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all cursor-pointer"
+                          >
+                            <Trash2 size={20} />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Link 
-                          href={`/admin/hoja/${hoja.id}`}
-                          target="_blank"
-                          className="p-4 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-2xl transition-all cursor-pointer"
-                        >
-                          <Printer size={20} />
-                        </Link>
-                        <button 
-                          onClick={() => eliminarHoja(hoja.id, hoja.numeros || [])}
-                          className="p-4 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all cursor-pointer"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {(hoja.numeros || []).map((num) => (
-                        <div key={num} className="w-10 h-10 bg-zinc-50 rounded-xl flex items-center justify-center text-[10px] font-black text-zinc-400 border border-zinc-100 group-hover:border-zinc-200 group-hover:bg-white transition-all">
-                          {num.toString().padStart(2, "0")}
-                        </div>
-                      ))}
+                      <div className="flex flex-wrap gap-2">
+                        {numeros.map((num) => (
+                          <div key={num} className="w-10 h-10 bg-zinc-50 rounded-xl flex items-center justify-center text-[10px] font-black text-zinc-400 border border-zinc-100 group-hover:border-zinc-200 group-hover:bg-white transition-all">
+                            {num.toString().padStart(3, "0")}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Controles de Paginación */}

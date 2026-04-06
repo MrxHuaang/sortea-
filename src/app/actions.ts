@@ -36,7 +36,7 @@ export async function checkAuth(): Promise<boolean> {
     const expectedValue = getSessionHash();
     
     return session?.value === expectedValue;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

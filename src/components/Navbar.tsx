@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X, ShoppingCart, Search, Crown, Home, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,9 +40,11 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <img 
+            <Image 
               src="/logo.png" 
               alt="SORTEA Logo" 
+              width={40}
+              height={40}
               className="w-10 h-10 object-contain transition-transform group-hover:scale-105 active:scale-95" 
             />
             <span className="text-sm font-black text-gray-900 uppercase tracking-[0.4em] hidden sm:block italic">SORTEA</span>

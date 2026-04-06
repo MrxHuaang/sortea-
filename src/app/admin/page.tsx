@@ -9,6 +9,7 @@ import PasswordModal from "@/components/PasswordModal";
 import VentasLista from "@/components/VentasLista";
 import SheetsManager from "@/components/SheetsManager";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   Settings, 
   CheckCircle2, 
@@ -150,7 +151,7 @@ export default function AdminPage() {
       {/* Mobile Header */}
       <div className="lg:hidden h-20 bg-white border-b border-zinc-100 px-6 flex items-center justify-between sticky top-0 z-50">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
             <h1 className="text-xs font-black text-zinc-900 tracking-widest uppercase">Admin</h1>
           </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-zinc-900 transition-all cursor-pointer">

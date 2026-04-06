@@ -18,7 +18,8 @@ export type TicketStatus = "disponible" | "fisica" | "reservada" | "pendiente" |
 
 export interface Venta {
   id: string;
-  numero: number;
+  numero?: number; // Para boletas antiguas individuales
+  "numeros boletas"?: number[]; // Para boletas nuevas en bloque
   nombre: string;
   contacto: string;
   pago: "pagado" | "pendiente";
@@ -30,7 +31,9 @@ export interface Venta {
 export interface Sheet {
   id: string;
   nombre: string;
-  boletas: number[];
+  "numeros boletas"?: number[];
+  numeros?: number[]; // Por si hay alguna con el nombre anterior
+  boletas?: number[]; // Por compatibilidad
   creadoEn: Timestamp;
 }
 

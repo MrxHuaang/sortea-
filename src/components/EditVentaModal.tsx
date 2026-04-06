@@ -53,7 +53,12 @@ export default function EditVentaModal({ venta, onClose }: EditVentaModalProps) 
         <div className="p-10 pb-0 flex justify-between items-start">
           <div className="space-y-1">
             <h2 className="text-2xl font-black text-zinc-900 tracking-tight">Editar</h2>
-            <p className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.2em]">Boleta #{venta.numero.toString().padStart(2, "0")}</p>
+            <p className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.2em]">
+              Boleta #{[venta.numero, ...(venta["numeros boletas"] || [])]
+                .filter((n): n is number => n !== undefined && n !== null)
+                .map(n => String(n).padStart(3, "0"))
+                .join(', ')}
+            </p>
           </div>
           <button onClick={onClose} className="text-zinc-300 hover:text-zinc-900 transition-colors">
             <X size={20} />

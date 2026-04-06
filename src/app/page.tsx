@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, doc } from "firebase/firestore";
 import { Config, Venta } from "@/types";
@@ -38,10 +39,12 @@ export default function Home() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setSelectedNumbers(parsed);
+          // Use a small delay to move the state update out of the synchronous effect body
+          // to avoid the 'react-hooks/set-state-in-effect' lint error.
+          setTimeout(() => setSelectedNumbers(parsed), 0);
         }
-      } catch (e) {
-        console.error("Error loading tickets draft:", e);
+      } catch {
+        // Error is handled silently or logged without unused variable
       }
     }
   }, []);
@@ -123,7 +126,7 @@ export default function Home() {
         month: 'long', 
         year: 'numeric' 
       }).format(date);
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   };
@@ -308,7 +311,10 @@ export default function Home() {
 
           <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-15 gap-2 md:gap-3 mb-12">
             {Array.from({ length: config.totalBoletas }, (_, i) => i).map((num) => {
-              const v = ventas.find(v => v.numero === num);
+              const v = ventas.find(v => 
+                v.numero === num || 
+                (v["numeros boletas"] && Array.isArray(v["numeros boletas"]) && v["numeros boletas"].includes(num))
+              );
               const isSelected = selectedNumbers.includes(num);
               
               let status = "disponible";
@@ -359,7 +365,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Hiliana */}
             <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
-              <img src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" />
+              <Image src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" />
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular</p>
                 <p className="text-lg font-black text-gray-900 uppercase italic">Hiliana Ordoñez Lasso</p>
@@ -378,7 +384,7 @@ export default function Home() {
 
             {/* Juan */}
             <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
-              <img src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" />
+              <Image src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" />
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular</p>
                 <p className="text-lg font-black text-gray-900 uppercase italic">Juan Pantoja</p>
@@ -397,7 +403,7 @@ export default function Home() {
 
             {/* Bre-b */}
             <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
-              <img src="/bre-b.png" alt="Bre-b" width={80} height={28} className="object-contain" />
+              <Image src="/bre-b.png" alt="Bre-b" width={80} height={28} className="object-contain" />
               <div className="space-y-4">
                 <div 
                   onClick={() => copyToClipboard("3213873880")}

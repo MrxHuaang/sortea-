@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Config } from "@/types";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Save, Calendar, CheckCircle, Loader2, Hash, Trophy } from "lucide-react";
+import { Save, Calendar, CheckCircle, Loader2 } from "lucide-react";
 
 interface ConfigFormProps {
   config: Config;

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, DocumentSnapshot } from "firebase/firestore";
 import { Venta } from "@/types";
 import { Search, Phone, Clock, CheckCircle2, MessageCircle, Info, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,12 +11,19 @@ import Navbar from "@/components/Navbar";
 export default function StatusPage() {
   const [celular, setCelular] = useState("");
   const [ventas, setVentas] = useState<Venta[]>([]);
+  const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
   // Forzar scroll al inicio al cargar
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
+    
+    // Cargar config para el padding de los números
+    const unsub = onSnapshot(doc(db, "config", "actual"), (docSnap: DocumentSnapshot) => {
+      if (docSnap.exists()) setConfig(docSnap.data());
+    });
+    return () => unsub();
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -105,6 +112,11 @@ export default function StatusPage() {
 
           {ventas.map((venta) => {
             const statusConfig = getStatusConfig(venta);
+            const ticketNumbers = [
+              ...(venta.numero !== undefined ? [venta.numero] : []),
+              ...(venta["numeros boletas"] || [])
+            ].sort((a,b) => a-b);
+
             return (
               <div 
                 key={venta.id} 
@@ -112,8 +124,12 @@ export default function StatusPage() {
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
                   <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 bg-zinc-900 rounded-[1.5rem] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-zinc-900/10">
-                      {venta.numero.toString().padStart(2, "0")}
+                    <div className="flex flex-wrap gap-2">
+                      {ticketNumbers.map(num => (
+                        <div key={num} className="w-16 h-16 bg-zinc-900 rounded-[1.5rem] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-zinc-900/10">
+                          {num.toString().padStart(config?.cifrasJuego || 3, "0")}
+                        </div>
+                      ))}
                     </div>
                     <div className="space-y-1">
                       <p className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.2em]">Titular</p>

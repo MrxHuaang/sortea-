@@ -2,12 +2,19 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, doc, writeBatch, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, doc, runTransaction, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { Config, Venta } from "@/types";
 import { cn, formatCurrency } from "@/lib/utils";
-import { Check, Loader2, ArrowRight, User, Phone, MapPin, MessageCircle, Clock, X, ChevronLeft, ShoppingCart, Copy, CheckCircle2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { Check, Loader2, ArrowRight, MessageCircle, X, ChevronLeft, ShoppingCart, Copy, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { z } from "zod";
+import { motion } from "framer-motion";
+
+const purchaseSchema = z.object({
+  nombre: z.string().min(3),
+  celular: z.string().length(10),
+  ciudad: z.string().min(3),
+});
 
 export default function PurchasePage() {
   const [step, setStep] = useState(1);
@@ -21,6 +28,7 @@ export default function PurchasePage() {
   const [celular, setCelular] = useState("");
   const [ciudad, setCiudad] = useState("");
   const [reserving, setReserving] = useState(false);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   
   // Paso 3: Pago & Confirmación
   const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -38,24 +46,17 @@ export default function PurchasePage() {
     }
   };
 
-  // Forzar scroll cada vez que cambie el paso o estado de confirmación
   useEffect(() => {
     scrollToTop();
   }, [step, isFinalConfirmation]);
 
   useEffect(() => {
-    // Try sessionStorage first (standard flow)
-    let saved = sessionStorage.getItem("preSelectedTickets");
-    
-    // Fallback to localStorage (accidental exit recovery)
-    if (!saved) {
-      saved = localStorage.getItem("selected_tickets_draft");
-    }
+    const saved = sessionStorage.getItem("preSelectedTickets") || localStorage.getItem("selected_tickets_draft");
 
     if (saved) {
       try {
         const tickets = JSON.parse(saved);
-        if (tickets.length > 0) {
+        if (Array.isArray(tickets) && tickets.length > 0) {
           setSelectedNumbers(tickets);
           setStep(2); 
           sessionStorage.removeItem("preSelectedTickets");
@@ -87,12 +88,6 @@ export default function PurchasePage() {
     setTimeout(() => setCopiedText(null), 2000);
   };
 
-  const resetFlow = () => {
-    setStep(1);
-    setSelectedNumbers([]);
-    setIsFinalConfirmation(false);
-  };
-
   const handleSelect = (num: number) => {
     if (selectedNumbers.includes(num)) {
       setSelectedNumbers(prev => prev.filter(n => n !== num));
@@ -103,25 +98,45 @@ export default function PurchasePage() {
 
   const handleReserve = async (e: React.FormEvent) => {
     e.preventDefault();
+    setGlobalError(null);
+
+    const validation = purchaseSchema.safeParse({ nombre, celular, ciudad });
+    if (!validation.success) {
+      alert("Por favor completa los campos correctamente (Celular de 10 dígitos, nombre y ciudad válidos)");
+      return;
+    }
+
     setReserving(true);
+
     try {
-      const batch = writeBatch(db);
-      selectedNumbers.forEach(num => {
-        const ventaRef = doc(collection(db, "ventas"));
-        batch.set(ventaRef, {
-          numero: num,
-          nombre,
-          contacto: `${celular} / ${ciudad}`,
-          pago: "pendiente",
-          tipo: "online",
-          creadoEn: serverTimestamp()
+      await runTransaction(db, async (transaction) => {
+        for (const num of selectedNumbers) {
+          const q = query(collection(db, "ventas"), where("numero", "==", num));
+          const snapshot = await getDocs(q);
+          if (!snapshot.empty) {
+            throw new Error(`La boleta #${String(num).padStart(config?.cifrasJuego || 3, '0')} ya ha sido apartada.`);
+          }
+        }
+
+        selectedNumbers.forEach(num => {
+          const newVentaRef = doc(collection(db, "ventas"));
+          transaction.set(newVentaRef, {
+            numero: num,
+            nombre,
+            contacto: `${celular} / ${ciudad}`,
+            pago: "pendiente",
+            tipo: "online",
+            creadoEn: serverTimestamp()
+          });
         });
       });
-      await batch.commit();
+
       setStep(3);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error al reservar:", error);
-      alert("Error al procesar tu solicitud.");
+      const message = error instanceof Error ? error.message : "Error al procesar la reserva.";
+      setGlobalError(message);
+      scrollToTop();
     } finally {
       setReserving(false);
     }
@@ -132,7 +147,7 @@ export default function PurchasePage() {
   };
 
   const handleWhatsAppFinal = () => {
-    const text = `Hola, acabo de apartar mis boletas y adjunto mi comprobante de pago 🎟️`;
+    const text = `Hola, acabo de apartar mis boletas (${selectedNumbers.map(n => String(n).padStart(config?.cifrasJuego || 3, '0')).join(', ')}) y adjunto mi comprobante de pago 🎟️`;
     window.open(`https://wa.me/573213873880?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -150,13 +165,93 @@ export default function PurchasePage() {
     return "bloqueada";
   };
 
+  const DigitalTicket = () => (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
+      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+      className="relative w-full max-w-sm mx-auto my-8 drop-shadow-[0_20px_30px_rgba(0,0,0,0.1)]"
+    >
+      <div className="bg-[#fffbeb] border-4 border-zinc-900 rounded-3xl overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-full h-4 flex justify-around -translate-y-1/2">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="w-6 h-6 bg-white border-4 border-zinc-900 rounded-full" />
+          ))}
+        </div>
+        <div className="absolute bottom-0 left-0 w-full h-4 flex justify-around translate-y-1/2">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="w-6 h-6 bg-white border-4 border-zinc-900 rounded-full" />
+          ))}
+        </div>
+
+        <div className="p-8 pt-10 pb-10 space-y-8">
+          <div className="text-center space-y-1 border-b-4 border-zinc-900 pb-6 border-dashed">
+            <p className="text-[10px] font-black text-zinc-900 uppercase tracking-[0.3em]">Admit One • Ticket</p>
+            <h3 className="text-2xl font-black text-zinc-900 uppercase italic tracking-tighter leading-none">
+              {config?.premio}
+            </h3>
+          </div>
+
+          <div className="space-y-6 text-center relative">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 opacity-20 pointer-events-none rotate-12">
+              <div className="border-8 border-red-600 text-red-600 font-black text-4xl px-4 py-2 rounded-2xl uppercase tracking-tighter">
+                RESERVADO
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular del Ticket</p>
+              <p className="text-2xl font-black text-zinc-900 uppercase underline decoration-amber-400 decoration-4 underline-offset-4">{nombre}</p>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Números de la Suerte</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                {selectedNumbers.sort((a,b) => a-b).map(num => (
+                  <div key={num} className="bg-zinc-900 text-white px-4 py-2 rounded-xl text-2xl font-black italic transform -rotate-2 hover:rotate-0 transition-transform shadow-[4px_4px_0px_#f59e0b]">
+                    {String(num).padStart(config?.cifrasJuego || 3, '0')}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t-4 border-zinc-900 border-dashed space-y-4">
+            <div className="flex justify-between items-end">
+              <div className="text-left">
+                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Total Inversión</p>
+                <p className="text-3xl font-black text-zinc-900">{formatCurrency(selectedNumbers.length * (config?.precioBoleta || 0))}</p>
+              </div>
+              <div className="text-right pb-1">
+                <div className="bg-amber-400 border-2 border-zinc-900 px-3 py-1 rounded-lg shadow-[2px_2px_0px_#000]">
+                  <span className="text-[10px] font-black uppercase italic">Valid 2026</span>
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-[8px] font-bold text-zinc-500 text-center leading-tight uppercase tracking-tighter">
+              Este ticket es un comprobante de reserva. <br/>
+              Debe ser validado con el pago oficial.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="absolute -bottom-4 left-[5%] w-[90%] h-8 bg-zinc-900/10 rounded-full blur-xl -z-10" />
+    </motion.div>
+  );
+
   return (
     <>
       <Navbar />
-      {/* Elemento ancla para el scroll */}
       <div ref={topRef} className="absolute top-0 left-0 w-full h-px pointer-events-none" />
       
       <main className="max-w-4xl mx-auto px-6 pt-32 pb-32 bg-white min-h-screen transition-colors">
+        {globalError && (
+          <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-[2rem] flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+            <X className="text-red-500 shrink-0" size={24} />
+            <p className="text-red-900 font-bold text-sm italic">{globalError}</p>
+          </div>
+        )}
+
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="space-y-4 mb-12">
@@ -175,9 +270,9 @@ export default function PurchasePage() {
                     key={num}
                     onClick={() => isAvailable && handleSelect(num)}
                     className={cn(
-                      "aspect-square rounded-xl flex items-center justify-center text-xs font-black border-2 transition-all active:scale-90 relative overflow-hidden group",
-                      isAvailable && !isSelected && "bg-gray-50 border-zinc-100 text-gray-400 hover:border-zinc-900 hover:text-zinc-900 cursor-pointer",
-                      isAvailable && isSelected && "bg-white border-zinc-900 text-zinc-900 shadow-xl shadow-zinc-100 cursor-pointer",
+                      "aspect-square rounded-xl flex items-center justify-center text-xs font-black border-2 transition-all active:scale-90 relative overflow-hidden group cursor-pointer",
+                      isAvailable && !isSelected && "bg-gray-50 border-zinc-100 text-gray-400 hover:border-zinc-900 hover:text-zinc-900",
+                      isAvailable && isSelected && "bg-white border-zinc-900 text-zinc-900 shadow-xl shadow-zinc-100",
                       !isAvailable && "bg-zinc-50 border-transparent text-zinc-200 cursor-not-allowed"
                     )}
                   >
@@ -192,7 +287,6 @@ export default function PurchasePage() {
               })}
             </div>
 
-            {/* Carrito Flotante */}
             <div className={cn(
               "fixed bottom-8 left-1/2 -translate-x-1/2 z-[150] transition-all duration-500 ease-out transform",
               selectedNumbers.length > 0 ? "translate-y-0 opacity-100 scale-100" : "translate-y-24 opacity-0 scale-90"
@@ -207,7 +301,7 @@ export default function PurchasePage() {
                 </div>
                 <button 
                   onClick={() => setStep(2)}
-                  className="flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:gap-4 transition-all"
+                  className="flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:gap-4 transition-all cursor-pointer"
                 >
                   Ver resumen
                   <ArrowRight size={16} />
@@ -221,7 +315,7 @@ export default function PurchasePage() {
           <div className="animate-in fade-in slide-in-from-right-4 duration-500">
             <button 
               onClick={() => setStep(1)}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-zinc-900 mb-12 transition-colors"
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-zinc-900 mb-12 transition-colors cursor-pointer"
             >
               <ChevronLeft size={14} />
               Volver a la selección
@@ -243,7 +337,7 @@ export default function PurchasePage() {
                         </div>
                         <button 
                           onClick={() => handleSelect(num)}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center transition-all scale-75 hover:scale-100 shadow-lg"
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center transition-all scale-75 hover:scale-100 shadow-lg cursor-pointer"
                         >
                           <X size={12} strokeWidth={3} />
                         </button>
@@ -300,7 +394,7 @@ export default function PurchasePage() {
                 <button 
                   type="submit"
                   disabled={reserving || selectedNumbers.length === 0}
-                  className="w-full bg-zinc-900 text-white py-6 rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+                  className="w-full bg-zinc-900 text-white py-6 rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50 cursor-pointer"
                 >
                   {reserving ? <Loader2 className="animate-spin" size={20} /> : (
                     <>
@@ -315,45 +409,32 @@ export default function PurchasePage() {
         )}
 
         {step === 3 && (
-          <div className="animate-in fade-in zoom-in duration-500 max-w-2xl mx-auto">
+          <div className="animate-in fade-in zoom-in duration-500 max-w-2xl mx-auto space-y-12">
             {isFinalConfirmation ? (
               <div className="text-center space-y-12 py-10 animate-in zoom-in">
                 <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/10">
                   <CheckCircle2 size={64} />
                 </div>
+                
                 <div className="space-y-4">
-                  <h2 className="text-5xl font-black text-gray-900 tracking-tighter uppercase italic">¡Todo listo! 🎉</h2>
-                  <p className="text-gray-500 font-medium max-w-sm mx-auto leading-relaxed">Tus números están apartados. Recuerda enviar tu comprobante de pago para confirmarlos.</p>
+                  <h2 className="text-5xl font-black text-gray-900 tracking-tighter uppercase italic">¡Reserva Exitosa! 🎉</h2>
+                  <p className="text-gray-500 font-medium max-w-sm mx-auto leading-relaxed">
+                    Tus números han sido apartados correctamente. Para completar tu compra, por favor envía el comprobante de pago al:
+                    <span className="block text-zinc-900 font-black mt-2 text-xl underline decoration-amber-400 decoration-4 underline-offset-4">321 387 3880</span>
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 text-left max-w-md mx-auto">
-                  <div className="bg-gray-50 p-6 rounded-3xl border border-zinc-100 flex items-center justify-between group cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => copyToClipboard("3138648345")}>
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Nequi • Hiliana Ordoñez</p>
-                      <p className="text-xl font-black text-gray-900">3138648345</p>
-                    </div>
-                    <Copy size={18} className="text-zinc-300 group-hover:text-zinc-900" />
-                    {copiedText === "3138648345" && <div className="absolute left-1/2 -translate-x-1/2 -top-8 bg-zinc-900 text-white text-[10px] font-black px-3 py-1 rounded-lg">¡COPIADO!</div>}
-                  </div>
-                  <div className="bg-gray-50 p-6 rounded-3xl border border-zinc-100 flex items-center justify-between group cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => copyToClipboard("3213873880")}>
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Nequi • Juan Pantoja</p>
-                      <p className="text-xl font-black text-gray-900">3213873880</p>
-                    </div>
-                    <Copy size={18} className="text-zinc-300 group-hover:text-zinc-900" />
-                    {copiedText === "3213873880" && <div className="absolute left-1/2 -translate-x-1/2 -top-8 bg-zinc-900 text-white text-[10px] font-black px-3 py-1 rounded-lg">¡COPIADO!</div>}
-                  </div>
-                </div>
+                <DigitalTicket />
 
-                <div className="space-y-6">
+                <div className="space-y-6 pt-8">
                   <button 
                     onClick={handleWhatsAppFinal}
-                    className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 uppercase tracking-widest text-sm"
+                    className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 uppercase tracking-widest text-sm cursor-pointer"
                   >
                     <MessageCircle size={24} />
-                    Enviar comprobante por WhatsApp
+                    Enviar comprobante ahora
                   </button>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest max-w-xs mx-auto">Una vez verifiquemos tu pago, tus boletas quedarán confirmadas. Puedes revisar tu estado en &apos;Mi Estado&apos;.</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest max-w-xs mx-auto">Una vez verifiquemos tu transferencia, tus boletas quedarán confirmadas oficialmente.</p>
                 </div>
               </div>
             ) : (
@@ -372,7 +453,7 @@ export default function PurchasePage() {
                       <div className="grid grid-cols-1 gap-4 w-full max-w-xs">
                         <div 
                           onClick={() => copyToClipboard("3138648345")}
-                          className="group relative cursor-pointer bg-zinc-50 hover:bg-zinc-100 p-6 rounded-[2rem] border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1"
+                          className="group relative cursor-pointer bg-zinc-50 hover:bg-zinc-100 p-6 rounded-[2rem] border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1 w-full"
                         >
                           <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Hiliana Ordoñez Lasso</p>
                           <div className="flex items-center gap-3">
@@ -384,7 +465,7 @@ export default function PurchasePage() {
 
                         <div 
                           onClick={() => copyToClipboard("3213873880")}
-                          className="group relative cursor-pointer bg-zinc-50 hover:bg-zinc-100 p-6 rounded-[2rem] border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1"
+                          className="group relative cursor-pointer bg-zinc-50 hover:bg-zinc-100 p-6 rounded-[2rem] border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1 w-full"
                         >
                           <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Juan Pantoja</p>
                           <div className="flex items-center gap-3">
@@ -411,7 +492,7 @@ export default function PurchasePage() {
                           <span className="text-lg font-black text-gray-900">3213873880</span>
                           <Copy size={14} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
                         </div>
-                        {copiedText === "3213873880" && <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg">¡COPIADO!</div>}
+                        {copiedText === "3213873880" && <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg animate-in fade-in zoom-in">¡COPIADO!</div>}
                       </div>
 
                       <div onClick={() => copyToClipboard("@jupaor")} className="group relative cursor-pointer bg-gray-50 hover:bg-zinc-100 p-5 rounded-2xl border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1">
@@ -420,14 +501,13 @@ export default function PurchasePage() {
                           <span className="text-lg font-black text-gray-900">@jupaor</span>
                           <Copy size={14} className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
                         </div>
-                        {copiedText === "@jupaor" && <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg">¡COPIADO!</div>}
+                        {copiedText === "@jupaor" && <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg animate-in fade-in zoom-in">¡COPIADO!</div>}
                       </div>
                     </div>
                   </div>
 
-                  {/* QR Secundario */}
                   <div className="pt-4 border-t border-zinc-100">
-                    <button onClick={() => setShowQR(!showQR)} className="w-full flex items-center justify-between text-[10px] font-black text-zinc-400 uppercase tracking-widest py-2 hover:text-zinc-900 transition-colors">
+                    <button onClick={() => setShowQR(!showQR)} className="w-full flex items-center justify-between text-[10px] font-black text-zinc-400 uppercase tracking-widest py-2 hover:text-zinc-900 transition-colors cursor-pointer">
                       ¿Prefieres escanear el QR?
                       {showQR ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
@@ -440,11 +520,10 @@ export default function PurchasePage() {
                     )}
                   </div>
 
-                  {/* Apartar Boletas - Botón Verde */}
                   <div className="pt-6">
                     <button 
                       onClick={handleApartarClick}
-                      className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 uppercase tracking-widest text-sm"
+                      className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 uppercase tracking-widest text-sm cursor-pointer"
                     >
                       <MessageCircle size={24} />
                       Apartar mis boletas

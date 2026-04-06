@@ -4,12 +4,9 @@ import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, doc } from "firebase/firestore";
 import { Config, Venta } from "@/types";
-import TicketGrid from "@/components/TicketGrid";
 import Navbar from "@/components/Navbar";
 import { 
   AlertTriangle, 
-  ShoppingCart, 
-  Search, 
   Trophy,
   ArrowRight,
   Check,
@@ -19,7 +16,7 @@ import {
   Sparkles,
   Copy,
   GraduationCap,
-  Heart
+  ShoppingCart
 } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import Link from "next/link";
@@ -34,13 +31,15 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
-  // Persistence: Load selected tickets from localStorage on mount
+  // Persistence: Load selected tickets from localStorage on mount (Safe way)
   useEffect(() => {
     const saved = localStorage.getItem("selected_tickets_draft");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setSelectedNumbers(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSelectedNumbers(parsed);
+        }
       } catch (e) {
         console.error("Error loading tickets draft:", e);
       }
@@ -71,7 +70,7 @@ export default function Home() {
         });
       }
       setLoading(false);
-    }, (err) => {
+    }, () => {
       setError("Error al cargar la configuración.");
       setLoading(false);
     });
@@ -135,7 +134,7 @@ export default function Home() {
         <AlertTriangle className="text-zinc-400 mb-4" size={48} />
         <h2 className="text-xl font-bold mb-2 tracking-tight text-gray-900">Problema de Conexión</h2>
         <p className="text-gray-500 mb-6 text-sm">{error}</p>
-        <button onClick={() => window.location.reload()} className="bg-zinc-900 text-white px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest">Reintentar</button>
+        <button onClick={() => window.location.reload()} className="bg-zinc-900 text-white px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest cursor-pointer hover:scale-105 transition-all">Reintentar</button>
       </div>
     );
   }
@@ -174,7 +173,29 @@ export default function Home() {
               </div>
               <div className="space-y-2">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado</p>
-                <p className="text-2xl md:text-3xl font-black text-gray-900">{isFlexibleDate ? "Abierta" : "Fecha Confirmada"}</p>
+                <p className="text-2xl md:text-3xl font-black text-gray-900">
+                  {config.fechaSorteo && config.fechaSorteo !== "Al completar la boletería" ? "Fecha Confirmada" : "Abierta"}
+                </p>
+              </div>
+            </div>
+
+            {/* Progreso de la Meta */}
+            <div className="max-w-xl space-y-4 pt-8">
+              <div className="flex justify-between items-end">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Progreso de Ventas</p>
+                  <p className="text-xl font-black text-zinc-900 italic">Meta del {((ventas.length / config.totalBoletas) * 100).toFixed(0)}% cumplida</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Faltan</p>
+                  <p className="text-xl font-black text-amber-500">{config.totalBoletas - ventas.length} Boletas</p>
+                </div>
+              </div>
+              <div className="h-3 w-full bg-zinc-100 rounded-full overflow-hidden border border-zinc-200 shadow-inner">
+                <div 
+                  className="h-full bg-zinc-900 rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: `${(ventas.length / config.totalBoletas) * 100}%` }}
+                />
               </div>
             </div>
 
@@ -185,7 +206,7 @@ export default function Home() {
                 </p>
                 <Link 
                   href="/ganador"
-                  className="inline-flex items-center gap-3 bg-zinc-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-200"
+                  className="inline-flex items-center gap-3 bg-zinc-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-200 cursor-pointer"
                 >
                   <Trophy size={16} className="text-amber-400" />
                   Ver ganador →
@@ -218,7 +239,7 @@ export default function Home() {
               </div>
               <Link 
                 href="#boleteria"
-                className="md:ml-auto bg-zinc-900 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-900/20 flex items-center gap-3 whitespace-nowrap"
+                className="md:ml-auto bg-zinc-900 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-900/20 flex items-center gap-3 whitespace-nowrap cursor-pointer"
               >
                 Apartar mi boleta
                 <ArrowRight size={16} />
@@ -304,7 +325,7 @@ export default function Home() {
                   onClick={() => isAvailable && handleSelect(num)}
                   className={cn(
                     "aspect-square flex flex-col items-center justify-center rounded-xl md:rounded-2xl transition-all duration-300 border relative group overflow-hidden",
-                    isAvailable && !isSelected && "bg-gray-50 border-zinc-200 hover:border-zinc-900 cursor-pointer shadow-sm active:scale-90",
+                    isAvailable && !isSelected && "bg-gray-50 border-zinc-100 text-gray-400 hover:border-zinc-900 hover:text-zinc-900 cursor-pointer shadow-sm active:scale-90",
                     isAvailable && isSelected && "bg-white border-zinc-900 text-zinc-900 shadow-xl shadow-zinc-100 cursor-pointer",
                     status === "reservada" && "bg-amber-400 border-amber-300 text-white cursor-not-allowed opacity-90",
                     status === "bloqueada" && "bg-zinc-900 border-zinc-900 text-white cursor-not-allowed shadow-inner"
@@ -424,7 +445,7 @@ export default function Home() {
             </div>
             <button 
               onClick={goToPurchase}
-              className="flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:gap-4 transition-all"
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:gap-4 transition-all cursor-pointer"
             >
               Ver resumen
               <ArrowRight size={16} />

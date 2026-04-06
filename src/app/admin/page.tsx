@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { onSnapshot, doc, collection, updateDoc, setDoc } from "firebase/firestore";
+import { onSnapshot, doc, collection, updateDoc } from "firebase/firestore";
 import { Config, Venta } from "@/types";
 import ConfigForm from "@/components/ConfigForm";
 import PasswordModal from "@/components/PasswordModal";
@@ -16,7 +16,6 @@ import {
   LogOut,
   LayoutDashboard,
   ExternalLink,
-  ChevronRight,
   FileText,
   Menu,
   X,
@@ -47,7 +46,7 @@ export default function AdminPage() {
       try {
         const authenticated = await checkAuth();
         setIsAdmin(authenticated);
-      } catch (err) {
+      } catch {
         setIsAdmin(false);
       }
     }
@@ -70,7 +69,7 @@ export default function AdminPage() {
         });
       }
       setLoading(false);
-    }, (err) => {
+    }, () => {
       setError("Error al conectar con la base de datos.");
       setLoading(false);
     });
@@ -94,7 +93,6 @@ export default function AdminPage() {
   const recordWinner = async () => {
     if (!loteroNumber || !winnerName || !config) return;
     
-    // Obtener las últimas X cifras
     const cifras = config.cifrasJuego || 3;
     const winningTicket = parseInt(loteroNumber.slice(-cifras));
 
@@ -110,7 +108,7 @@ export default function AdminPage() {
         setIsDrawModalOpen(false);
         setLoteroNumber("");
         setWinnerName("");
-      } catch (e) {
+      } catch {
         alert("Error al registrar ganador");
       }
     }
@@ -155,17 +153,17 @@ export default function AdminPage() {
             <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
             <h1 className="text-xs font-black text-zinc-900 tracking-widest uppercase">Admin</h1>
           </div>
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-zinc-900 transition-all">
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-zinc-900 transition-all cursor-pointer">
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-0 z-40 lg:relative lg:z-0 w-full lg:w-80 bg-white lg:bg-zinc-50/50 lg:border-r border-zinc-100 p-8 lg:p-12 flex flex-col transition-all duration-300 transform",
+        "fixed inset-0 z-40 lg:sticky lg:top-0 lg:h-screen w-full lg:w-80 bg-white lg:bg-zinc-50/50 lg:border-r border-zinc-100 p-8 lg:p-12 flex flex-col transition-all duration-300 transform",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
-        <div className="hidden lg:flex items-center justify-between mb-16">
+        <div className="hidden lg:flex items-center justify-between mb-16 shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-zinc-900 rounded-2xl flex items-center justify-center shadow-2xl shadow-zinc-200">
               <span className="text-white font-black text-lg italic">S</span>
@@ -177,13 +175,13 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-3">
+        <nav className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id as TabType); setIsSidebarOpen(false); }}
               className={cn(
-                "w-full flex items-center justify-between px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all",
+                "w-full flex items-center justify-between px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all cursor-pointer",
                 activeTab === tab.id 
                   ? "bg-zinc-900 text-white shadow-2xl shadow-zinc-200 scale-[1.02]" 
                   : "text-zinc-400 hover:text-zinc-900 hover:bg-white"
@@ -205,17 +203,17 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        <div className="mt-16 pt-8 border-t border-zinc-100 space-y-6">
+        <div className="mt-auto pt-8 border-t border-zinc-100 space-y-6 shrink-0">
           <Link 
             href="/" 
-            className="w-full flex items-center justify-between group px-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-all"
+            className="w-full flex items-center justify-between group px-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-all cursor-pointer"
           >
             Vista Pública
             <ExternalLink size={14} className="group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
           </Link>
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center justify-between group px-2 text-[10px] font-black text-zinc-300 uppercase tracking-widest hover:text-red-500 transition-all"
+            className="w-full flex items-center justify-between group px-2 text-[10px] font-black text-zinc-300 uppercase tracking-widest hover:text-red-500 transition-all cursor-pointer"
           >
             Salir del Sistema
             <LogOut size={14} className="group-hover:translate-x-1 transition-transform" />
@@ -237,7 +235,7 @@ export default function AdminPage() {
               </div>
               <button 
                 onClick={() => setIsDrawModalOpen(true)}
-                className="bg-amber-400 hover:bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-400/20 flex items-center gap-3 transition-all"
+                className="bg-amber-400 hover:bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-400/20 flex items-center gap-3 transition-all cursor-pointer"
               >
                 <Trophy size={18} />
                 Realizar Sorteo
@@ -280,7 +278,7 @@ export default function AdminPage() {
                     <h4 className="text-2xl font-black text-zinc-900 uppercase italic">#{config.ganador.numero.toString().padStart(config.cifrasJuego || 3, '0')} — {config.ganador.nombre}</h4>
                   </div>
                 </div>
-                <button onClick={removeWinner} className="p-4 text-zinc-300 hover:text-red-500 transition-colors">
+                <button onClick={removeWinner} className="p-4 text-zinc-300 hover:text-red-500 transition-colors cursor-pointer">
                   <Trash2 size={20} />
                 </button>
               </div>
@@ -339,8 +337,8 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="flex gap-4">
-              <button onClick={() => setIsDrawModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-zinc-400">Cancelar</button>
-              <button onClick={recordWinner} className="flex-[2] bg-amber-400 text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-xl shadow-amber-400/20">Confirmar Ganador</button>
+              <button onClick={() => setIsDrawModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-zinc-400 cursor-pointer">Cancelar</button>
+              <button onClick={recordWinner} className="flex-[2] bg-amber-400 text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-xl shadow-amber-400/20 cursor-pointer">Confirmar Ganador</button>
             </div>
           </div>
         </div>

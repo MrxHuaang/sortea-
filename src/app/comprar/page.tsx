@@ -7,7 +7,6 @@ import { Config, Venta } from "@/types";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Check, Loader2, ArrowRight, MessageCircle, X, ChevronLeft, ShoppingCart, Copy, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import Image from "next/image";
 import { z } from "zod";
 import { motion } from "framer-motion";
 
@@ -36,7 +35,7 @@ export default function PurchasePage() {
   const [isFinalConfirmation, setIsFinalConfirmation] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
-  // Referencia para forzar el scroll al inicio
+  // Referencias
   const topRef = useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
@@ -111,7 +110,6 @@ export default function PurchasePage() {
 
     try {
       await runTransaction(db, async (transaction) => {
-        // Obtener todas las ventas actuales para verificar contra los números seleccionados
         const ventasSnapshot = await getDocs(collection(db, "ventas"));
         const ventasData = ventasSnapshot.docs.map(d => d.data() as Venta);
 
@@ -126,7 +124,6 @@ export default function PurchasePage() {
           }
         }
 
-        // Crear un solo documento con el array de números (Tu formato actual)
         const newVentaRef = doc(collection(db, "ventas"));
         transaction.set(newVentaRef, {
           "numeros boletas": selectedNumbers,
@@ -167,84 +164,10 @@ export default function PurchasePage() {
   }
 
   const getTicketStatus = (numero: number) => {
-    const v = ventas.find(v => v.numero === numero);
+    const v = ventas.find(v => v.numero === numero || (v["numeros boletas"]?.includes(numero)));
     if (!v) return "disponible";
     return "bloqueada";
   };
-
-  const DigitalTicket = () => (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
-      animate={{ opacity: 1, scale: 1, rotate: 0 }}
-      className="relative w-full max-w-sm mx-auto my-8 drop-shadow-[0_20px_30px_rgba(0,0,0,0.1)]"
-    >
-      <div className="bg-[#fffbeb] border-4 border-zinc-900 rounded-3xl overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-4 flex justify-around -translate-y-1/2">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="w-6 h-6 bg-white border-4 border-zinc-900 rounded-full" />
-          ))}
-        </div>
-        <div className="absolute bottom-0 left-0 w-full h-4 flex justify-around translate-y-1/2">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="w-6 h-6 bg-white border-4 border-zinc-900 rounded-full" />
-          ))}
-        </div>
-
-        <div className="p-8 pt-10 pb-10 space-y-8">
-          <div className="text-center space-y-1 border-b-4 border-zinc-900 pb-6 border-dashed">
-            <p className="text-[10px] font-black text-zinc-900 uppercase tracking-[0.3em]">Admit One • Ticket</p>
-            <h3 className="text-2xl font-black text-zinc-900 uppercase italic tracking-tighter leading-none">
-              {config?.premio}
-            </h3>
-          </div>
-
-          <div className="space-y-6 text-center relative">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 opacity-20 pointer-events-none rotate-12">
-              <div className="border-8 border-red-600 text-red-600 font-black text-4xl px-4 py-2 rounded-2xl uppercase tracking-tighter">
-                RESERVADO
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular del Ticket</p>
-              <p className="text-2xl font-black text-zinc-900 uppercase underline decoration-amber-400 decoration-4 underline-offset-4">{nombre}</p>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Números de la Suerte</p>
-              <div className="flex flex-wrap justify-center gap-3">
-                {selectedNumbers.sort((a,b) => a-b).map(num => (
-                  <div key={num} className="bg-zinc-900 text-white px-4 py-2 rounded-xl text-2xl font-black italic transform -rotate-2 hover:rotate-0 transition-transform shadow-[4px_4px_0px_#f59e0b]">
-                    {String(num).padStart(config?.cifrasJuego || 3, '0')}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t-4 border-zinc-900 border-dashed space-y-4">
-            <div className="flex justify-between items-end">
-              <div className="text-left">
-                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Total Inversión</p>
-                <p className="text-3xl font-black text-zinc-900">{formatCurrency(selectedNumbers.length * (config?.precioBoleta || 0))}</p>
-              </div>
-              <div className="text-right pb-1">
-                <div className="bg-amber-400 border-2 border-zinc-900 px-3 py-1 rounded-lg shadow-[2px_2px_0px_#000]">
-                  <span className="text-[10px] font-black uppercase italic">Valid 2026</span>
-                </div>
-              </div>
-            </div>
-            
-            <p className="text-[8px] font-bold text-zinc-500 text-center leading-tight uppercase tracking-tighter">
-              Este ticket es un comprobante de reserva. <br/>
-              Debe ser validado con el pago oficial.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="absolute -bottom-4 left-[5%] w-[90%] h-8 bg-zinc-900/10 rounded-full blur-xl -z-10" />
-    </motion.div>
-  );
 
   return (
     <>
@@ -431,7 +354,18 @@ export default function PurchasePage() {
                   </p>
                 </div>
 
-                <DigitalTicket />
+                {/* Resumen simple en lugar del ticket complejo */}
+                <div className="bg-zinc-50 p-8 rounded-[2.5rem] border border-zinc-100 space-y-6">
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Resumen de tu reserva</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {selectedNumbers.sort((a,b) => a-b).map(num => (
+                      <span key={num} className="px-4 py-2 bg-white rounded-xl text-lg font-black text-zinc-900 border border-zinc-200">
+                        {String(num).padStart(config.cifrasJuego || 3, '0')}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-sm font-bold text-zinc-900">Total a transferir: {formatCurrency(selectedNumbers.length * config.precioBoleta)}</p>
+                </div>
 
                 <div className="space-y-6 pt-8">
                   <button 
@@ -455,7 +389,7 @@ export default function PurchasePage() {
                   {/* Nequi */}
                   <div className="space-y-6">
                     <div className="flex flex-col items-center gap-4">
-                      <Image src="/nequi.png" alt="Nequi" width={100} height={35} className="object-contain" />
+                      <img src="/nequi.png" alt="Nequi" width={100} height={35} className="object-contain" />
                       
                       <div className="grid grid-cols-1 gap-4 w-full max-w-xs">
                         <div 
@@ -488,7 +422,7 @@ export default function PurchasePage() {
                   {/* Bre-b */}
                   <div className="pt-10 border-t border-zinc-100 space-y-8">
                     <div className="flex flex-col items-center gap-4">
-                      <Image src="/bre-b.png" alt="Bre-b" width={100} height={35} className="object-contain" />
+                      <img src="/bre-b.png" alt="Bre-b" width={100} height={35} className="object-contain" />
                       <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">También disponible en Bre-b</p>
                     </div>
                     
@@ -521,7 +455,7 @@ export default function PurchasePage() {
                     {showQR && (
                       <div className="pt-6 animate-in slide-in-from-top-2 duration-300">
                         <div className="bg-gray-50 rounded-[2rem] flex items-center justify-center p-6 border border-zinc-100 mx-auto w-fit">
-                          <Image src="/qr-nequi.jpg" alt="QR Nequi" width={200} height={200} className="rounded-xl shadow-lg" />
+                          <img src="/qr-nequi.jpg" alt="QR Nequi" width={200} height={200} className="rounded-xl shadow-lg" />
                         </div>
                       </div>
                     )}

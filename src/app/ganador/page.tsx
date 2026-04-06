@@ -18,6 +18,26 @@ export default function WinnerPage() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
+  const triggerConfetti = () => {
+    const duration = 5 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval: NodeJS.Timeout = setInterval(function() {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+    }, 250);
+  };
+
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "config", "actual"), (docSnap) => {
       if (docSnap.exists()) {
@@ -31,26 +51,6 @@ export default function WinnerPage() {
     });
     return unsub;
   }, []);
-
-  const triggerConfetti = () => {
-    const duration = 5 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-
-    const interval: any = setInterval(function() {
-      const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
-
-      const particleCount = 50 * (timeLeft / duration);
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-    }, 250);
-  };
 
   const formatWinnerNumber = (num: number) => {
     return String(num).padStart(config?.cifrasJuego || 3, '0');
@@ -75,8 +75,10 @@ export default function WinnerPage() {
                 <Star className="text-zinc-200" size={48} />
               </div>
               <div className="space-y-4">
-                <h1 className="text-5xl font-black text-zinc-900 uppercase tracking-tight">Próximamente</h1>
-                <p className="text-zinc-400 font-medium max-w-sm mx-auto leading-relaxed">El sorteo aún no se ha realizado. ¡Sigue participando!</p>
+                <h1 className="text-5xl font-black text-zinc-900 uppercase tracking-tight">Sorteo en Proceso</h1>
+                <p className="text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed italic">
+                  La fecha oficial del sorteo se establecerá una vez completada la venta de la boletería, rigiéndose por los resultados de la Lotería de Bogotá. ¡Aún puedes participar!
+                </p>
               </div>
               <Link 
                 href="/comprar"

@@ -181,7 +181,7 @@ export default function Home() {
             {isFlexibleDate && (
               <div className="bg-zinc-50 border-l-4 border-amber-400 p-8 rounded-r-[2rem] max-w-2xl animate-in fade-in slide-in-from-left-4 duration-700">
                 <p className="text-sm md:text-base font-medium text-zinc-600 leading-relaxed italic mb-6">
-                  Agotada la boletería se asignará una fecha en que juega la <span className="text-zinc-900 font-black">Lotería de Bogotá</span>. Podrás consultar el ganador oficial aquí mismo:
+                  Una vez agotada la boletería, se establecerá la fecha definitiva del sorteo, la cual se regirá por los resultados de la <span className="text-zinc-900 font-black">Lotería de Bogotá</span>. Podrás consultar el ganador oficial aquí mismo:
                 </p>
                 <Link 
                   href="/ganador"
@@ -254,9 +254,9 @@ export default function Home() {
               <GraduationCap className="text-amber-500" size={40} />
             </div>
             <div className="space-y-4 text-center md:text-left">
-              <h3 className="text-2xl font-black text-zinc-900 uppercase italic tracking-tight">¿Por qué participar?</h3>
+              <h3 className="text-2xl font-black text-zinc-900 uppercase italic tracking-tight">Propósito de la Iniciativa</h3>
               <p className="text-lg md:text-xl font-medium text-zinc-600 leading-relaxed italic">
-                &quot;Esta rifa es para terminar estudios de ingeniería. Cada boleta es un granito de arena que nos ayuda muchísimo. <span className="text-zinc-900 font-black">¡Gracias por participar!</span>&quot;
+                &quot;Tu participación contribuye directamente al cumplimiento de metas académicas en <span className="text-zinc-900 font-black">Ingeniería</span>. Cada boleta representa un apoyo fundamental para la culminación de este proyecto profesional. ¡Gracias por ser parte de este logro!&quot;
               </p>
             </div>
           </div>

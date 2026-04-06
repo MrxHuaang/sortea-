@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, deleteDoc, writeBatch, onSnapshot } from "firebase/firestore";
 import { Venta, Config } from "@/types";
-import { Check, Trash2, Search, Edit3, Share2, Square, CheckSquare, Download, Filter } from "lucide-react";
+import { Check, Trash2, Search, Edit3, Share2, Square, CheckSquare, Download, Filter, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import EditVentaModal from "./EditVentaModal";
 
@@ -20,6 +20,10 @@ export default function VentasLista({ ventas }: VentasListaProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [config, setConfig] = useState<Config | null>(null);
 
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "config", "actual"), (snap) => {
       if (snap.exists()) setConfig(snap.data() as Config);
@@ -27,8 +31,15 @@ export default function VentasLista({ ventas }: VentasListaProps) {
     return unsub;
   }, []);
 
-  const formatNumber = (num: number) => {
+  const formatTicketNumber = (num: number) => {
     return String(num).padStart(config?.cifrasJuego || 3, '0');
+  };
+
+  const getNumbers = (venta: Venta) => {
+    if (venta["numeros boletas"] && Array.isArray(venta["numeros boletas"])) {
+      return venta["numeros boletas"];
+    }
+    return venta.numero !== undefined ? [venta.numero] : [];
   };
 
   const markAsPaid = async (id: string) => {
@@ -41,7 +52,7 @@ export default function VentasLista({ ventas }: VentasListaProps) {
 
   const markBulkAsPaid = async () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`¿Confirmar pago de ${selectedIds.length} boletas?`)) return;
+    if (!confirm(`¿Confirmar pago de ${selectedIds.length} registros?`)) return;
     try {
       const batch = writeBatch(db);
       selectedIds.forEach(id => batch.update(doc(db, "ventas", id), { pago: "pagado" }));
@@ -54,7 +65,7 @@ export default function VentasLista({ ventas }: VentasListaProps) {
 
   const removeBulk = async () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`¿ELIMINAR ${selectedIds.length} boletas?`)) return;
+    if (!confirm(`¿ELIMINAR ${selectedIds.length} registros?`)) return;
     try {
       const batch = writeBatch(db);
       selectedIds.forEach(id => batch.delete(doc(db, "ventas", id)));
@@ -75,11 +86,8 @@ export default function VentasLista({ ventas }: VentasListaProps) {
   };
 
   const shareWhatsApp = (venta: Venta) => {
-    const nums = [
-      ...(venta.numero !== undefined ? [venta.numero] : []),
-      ...(venta["numeros boletas"] || [])
-    ].sort((a,b) => a-b);
-    const text = `¡Hola ${venta.nombre}! 👋\n\nConfirmamos tu boleta #${nums.map(n => formatNumber(n)).join(', ')} como PAGADA. ¡Gracias! 🍀`;
+    const nums = getNumbers(venta).map(n => formatTicketNumber(n)).join(", ");
+    const text = `¡Hola ${venta.nombre}! 👋\n\nConfirmamos tu reserva (${nums}) como PAGADA. ¡Gracias por participar! 🍀`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -88,27 +96,25 @@ export default function VentasLista({ ventas }: VentasListaProps) {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === ventasFiltradas.length) {
+    if (selectedIds.length === paginatedVentas.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(ventasFiltradas.map(v => v.id));
+      setSelectedIds(paginatedVentas.map(v => v.id));
     }
   };
 
   const exportToCSV = () => {
-    const headers = ["Boleta", "Participante", "Contacto", "Estado", "Tipo", "Fecha"];
+    const headers = ["Boletas", "Participante", "Contacto", "Estado", "Tipo", "Fecha", "Hora"];
     const rows = ventasFiltradas.map(v => {
-      const nums = [
-        ...(v.numero !== undefined ? [v.numero] : []),
-        ...(v["numeros boletas"] || [])
-      ].sort((a,b) => a-b);
+      const date = v.creadoEn?.toDate();
       return [
-        nums.map(n => formatNumber(n)).join(' - '),
+        getNumbers(v).map(n => formatTicketNumber(n)).join("-"),
         v.nombre,
         v.contacto,
         v.pago.toUpperCase(),
         v.tipo || "online",
-        v.creadoEn?.toDate().toLocaleDateString() || ""
+        date?.toLocaleDateString() || "",
+        date?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || ""
       ];
     });
     const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
@@ -123,19 +129,24 @@ export default function VentasLista({ ventas }: VentasListaProps) {
     .filter((v) => (filtroPago === "todas" ? true : v.pago === filtroPago))
     .filter((v) => (filtroTipo === "todos" ? true : v.tipo === filtroTipo))
     .filter((v) => {
-      const nums = [
-        ...(v.numero !== undefined ? [v.numero] : []),
-        ...(v["numeros boletas"] || [])
-      ];
-      return v.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
-             nums.some(n => n.toString().includes(busqueda)) ||
-             v.contacto.toLowerCase().includes(busqueda.toLowerCase());
+      const search = busqueda.toLowerCase();
+      const nums = getNumbers(v).map(n => formatTicketNumber(n)).join(" ");
+      return v.nombre.toLowerCase().includes(search) || 
+             nums.includes(search) ||
+             v.contacto.toLowerCase().includes(search);
     })
-    .sort((a, b) => {
-      const aNum = a.numero !== undefined ? a.numero : (a["numeros boletas"]?.[0] || 0);
-      const bNum = b.numero !== undefined ? b.numero : (b["numeros boletas"]?.[0] || 0);
-      return aNum - bNum;
-    });
+    // ORDEN: Por fecha de creación descendente (Las últimas primero)
+    .sort((a, b) => (b.creadoEn?.toMillis() || 0) - (a.creadoEn?.toMillis() || 0));
+
+  // Lógica de Paginación
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const paginatedVentas = ventasFiltradas.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(ventasFiltradas.length / itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1); // Resetear a página 1 cuando cambien los filtros o búsqueda
+  }, [filtroPago, filtroTipo, busqueda]);
 
   return (
     <div className="bg-white rounded-[2rem] md:rounded-[3rem] border border-zinc-100 overflow-hidden shadow-sm transition-colors">
@@ -150,15 +161,15 @@ export default function VentasLista({ ventas }: VentasListaProps) {
             <div className="flex items-center gap-3">
               {selectedIds.length > 0 && (
                 <>
-                  <button onClick={markBulkAsPaid} className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 flex items-center gap-2 animate-in zoom-in transition-transform active:scale-95">
+                  <button onClick={markBulkAsPaid} className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 flex items-center gap-2 animate-in zoom-in transition-transform active:scale-95 cursor-pointer">
                     <Check size={14} /> Confirmar ({selectedIds.length})
                   </button>
-                  <button onClick={removeBulk} className="bg-red-500 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-red-500/20 flex items-center gap-2 animate-in zoom-in transition-transform active:scale-95">
+                  <button onClick={removeBulk} className="bg-red-500 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-red-500/20 flex items-center gap-2 animate-in zoom-in transition-transform active:scale-95 cursor-pointer">
                     <Trash2 size={14} /> Eliminar ({selectedIds.length})
                   </button>
                 </>
               )}
-              <button onClick={exportToCSV} className="bg-zinc-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 shadow-lg shadow-zinc-900/10">
+              <button onClick={exportToCSV} className="bg-zinc-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 shadow-lg shadow-zinc-900/10 cursor-pointer">
                 <Download size={14} /> Exportar CSV
               </button>
             </div>
@@ -183,7 +194,7 @@ export default function VentasLista({ ventas }: VentasListaProps) {
               <Filter size={12} /> Pago
             </div>
             {(["todas", "pagado", "pendiente"] as const).map((f) => (
-              <button key={f} onClick={() => setFiltroPago(f)} className={cn("px-4 py-2 text-[9px] font-black rounded-xl transition-all uppercase tracking-widest", filtroPago === f ? "bg-zinc-900 text-white shadow-md" : "text-zinc-400 hover:text-zinc-600")}>
+              <button key={f} onClick={() => setFiltroPago(f)} className={cn("px-4 py-2 text-[9px] font-black rounded-xl transition-all uppercase tracking-widest cursor-pointer", filtroPago === f ? "bg-zinc-900 text-white shadow-md" : "text-zinc-400 hover:text-zinc-600")}>
                 {f}
               </button>
             ))}
@@ -194,7 +205,7 @@ export default function VentasLista({ ventas }: VentasListaProps) {
               <Filter size={12} /> Origen
             </div>
             {(["todos", "online", "fisica"] as const).map((f) => (
-              <button key={f} onClick={() => setFiltroTipo(f)} className={cn("px-4 py-2 text-[9px] font-black rounded-xl transition-all uppercase tracking-widest", filtroTipo === f ? "bg-zinc-900 text-white shadow-md" : "text-zinc-400 hover:text-zinc-600")}>
+              <button key={f} onClick={() => setFiltroTipo(f)} className={cn("px-4 py-2 text-[9px] font-black rounded-xl transition-all uppercase tracking-widest cursor-pointer", filtroTipo === f ? "bg-zinc-900 text-white shadow-md" : "text-zinc-400 hover:text-zinc-600")}>
                 {f}
               </button>
             ))}
@@ -203,77 +214,118 @@ export default function VentasLista({ ventas }: VentasListaProps) {
       </div>
 
       <div className="overflow-x-auto scrollbar-hide">
-        <table className="w-full text-left border-collapse min-w-[900px]">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="text-zinc-600 text-[10px] uppercase font-black tracking-[0.2em] border-b border-zinc-100 bg-zinc-50/50">
-              <th className="px-8 py-6 w-32">
-                <div className="flex items-center gap-3">
-                  <button onClick={toggleSelectAll} className="text-zinc-400 hover:text-zinc-900 transition-colors">
-                    {selectedIds.length === ventasFiltradas.length && ventasFiltradas.length > 0 ? <CheckSquare size={20} /> : <Square size={20} />}
-                  </button>
-                  <span>Selección</span>
-                </div>
+              <th className="px-4 py-6 w-16 text-center">
+                <button onClick={toggleSelectAll} className="text-zinc-400 hover:text-zinc-900 transition-colors cursor-pointer">
+                  {selectedIds.length === paginatedVentas.length && paginatedVentas.length > 0 ? <CheckSquare size={18} /> : <Square size={18} />}
+                </button>
               </th>
-              <th className="px-8 py-6 w-24">Boleta</th>
-              <th className="px-8 py-6">Participante</th>
-              <th className="px-8 py-6 text-center w-32">Estado</th>
-              <th className="px-8 py-6 text-right">Acciones</th>
+              <th className="px-4 py-6 w-32">Boletas</th>
+              <th className="px-4 py-6">Participante</th>
+              <th className="px-4 py-6 text-center w-36">Fecha y Hora</th>
+              <th className="px-4 py-6 text-center w-28">Estado</th>
+              <th className="px-4 py-6 text-right w-40">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-50">
-            {ventasFiltradas.length === 0 ? (
-              <tr><td colSpan={5} className="px-8 py-32 text-center text-zinc-400 text-xs font-black uppercase tracking-widest">No se encontraron registros</td></tr>
+            {paginatedVentas.length === 0 ? (
+              <tr><td colSpan={6} className="px-8 py-32 text-center text-zinc-400 text-xs font-black uppercase tracking-widest">No se encontraron registros</td></tr>
             ) : (
-              ventasFiltradas.map((venta) => (
-                <tr key={venta.id} className={cn("hover:bg-zinc-50/50 transition-colors group", selectedIds.includes(venta.id) && "bg-zinc-50")}>
-                  <td className="px-8 py-6">
-                    <button onClick={() => toggleSelect(venta.id)} className={cn("transition-colors", selectedIds.includes(venta.id) ? "text-zinc-900" : "text-zinc-300 hover:text-zinc-500")}>
-                      {selectedIds.includes(venta.id) ? <CheckSquare size={20} /> : <Square size={20} />}
-                    </button>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex flex-wrap gap-2">
-                      {[...(venta.numero !== undefined ? [venta.numero] : []), ...(venta["numeros boletas"] || [])]
-                        .sort((a,b) => a-b)
-                        .map(n => (
-                          <div key={n} className="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-zinc-900/10 italic">
-                            {formatNumber(n)}
+              paginatedVentas.map((venta) => {
+                const nums = getNumbers(venta);
+                const date = venta.creadoEn?.toDate();
+                
+                return (
+                  <tr key={venta.id} className={cn("hover:bg-zinc-50/50 transition-colors group", selectedIds.includes(venta.id) && "bg-zinc-50")}>
+                    <td className="px-4 py-6 text-center">
+                      <button onClick={() => toggleSelect(venta.id)} className={cn("transition-colors cursor-pointer", selectedIds.includes(venta.id) ? "text-zinc-900" : "text-zinc-300 hover:text-zinc-500")}>
+                        {selectedIds.includes(venta.id) ? <CheckSquare size={18} /> : <Square size={18} />}
+                      </button>
+                    </td>
+                    <td className="px-4 py-6">
+                      <div className="flex flex-wrap gap-1">
+                        {nums.slice(0, 2).map((n) => (
+                          <div key={n} className="px-2 py-1 bg-zinc-900 rounded-lg text-white font-black text-[9px] shadow-sm italic">
+                            {formatTicketNumber(n)}
                           </div>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex flex-col">
-                      <span className="text-base font-black text-zinc-900 uppercase leading-none italic">{venta.nombre}</span>
-                      <span className="text-xs font-bold text-zinc-500 mt-1">{venta.contacto}</span>
-                      {venta.tipo === "fisica" ? (
-                        <span className="inline-flex mt-2 text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-widest w-fit border border-blue-100">Física (Hoja)</span>
-                      ) : (
-                        <span className="inline-flex mt-2 text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-widest w-fit border border-emerald-100">Online (Web)</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex justify-center">
-                      <div className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm transition-colors", venta.pago === "pagado" ? "bg-emerald-500 text-white border-emerald-400" : "bg-amber-400 text-white border-amber-300")}>
-                        {venta.pago}
+                        ))}
+                        {nums.length > 2 && <span className="text-[9px] font-black text-zinc-300 self-center">+{nums.length - 2}</span>}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex justify-end gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all">
-                      <button onClick={() => shareWhatsApp(venta)} title="Compartir comprobante" className="p-2.5 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 rounded-xl transition-all"><Share2 size={18} /></button>
-                      <button onClick={() => setEditingVenta(venta)} title="Editar registro" className="p-2.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 rounded-xl transition-all"><Edit3 size={18} /></button>
-                      {venta.pago === "pendiente" && <button onClick={() => markAsPaid(venta.id)} title="Confirmar pago" className="p-2.5 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 rounded-xl transition-all"><Check size={18} /></button>}
-                      <button onClick={() => removeVenta(venta.id)} title="Eliminar registro" className="p-2.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-xl transition-all"><Trash2 size={18} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="px-4 py-6">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-zinc-900 uppercase leading-none italic">{venta.nombre}</span>
+                        <span className="text-[10px] font-bold text-zinc-500 mt-1">{venta.contacto}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-6 text-center">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[11px] font-black text-zinc-900">{date?.toLocaleDateString() || "--"}</span>
+                        <div className="flex items-center gap-1 text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">
+                          <Clock size={10} />
+                          {date?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "--"}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-6">
+                      <div className="flex justify-center">
+                        <div className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border shadow-sm transition-colors", venta.pago === "pagado" ? "bg-emerald-500 text-white border-emerald-400" : "bg-amber-400 text-white border-amber-300")}>
+                          {venta.pago}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-6">
+                      <div className="flex justify-end gap-1.5 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all">
+                        <button onClick={() => shareWhatsApp(venta)} title="WhatsApp" className="p-2 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 rounded-lg transition-all cursor-pointer"><Share2 size={16} /></button>
+                        <button onClick={() => setEditingVenta(venta)} title="Editar" className="p-2 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 rounded-lg transition-all cursor-pointer"><Edit3 size={16} /></button>
+                        {venta.pago === "pendiente" && <button onClick={() => markAsPaid(venta.id)} title="Confirmar" className="p-2 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 rounded-lg transition-all cursor-pointer"><Check size={16} /></button>}
+                        <button onClick={() => removeVenta(venta.id)} title="Borrar" className="p-2 text-zinc-500 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-lg transition-all cursor-pointer"><Trash2 size={16} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Controles de Paginación */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-6 py-12 border-t border-zinc-50 bg-zinc-50/10">
+          <button 
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+            className="p-4 bg-white border border-zinc-100 rounded-2xl text-zinc-400 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="flex items-center gap-3">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={cn(
+                  "w-10 h-10 rounded-xl font-black text-[10px] transition-all cursor-pointer",
+                  currentPage === page ? "bg-zinc-900 text-white shadow-lg shadow-zinc-200" : "bg-white text-zinc-400 border border-zinc-100 hover:border-zinc-900 hover:text-zinc-900"
+                )}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+          <button 
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            className="p-4 bg-white border border-zinc-100 rounded-2xl text-zinc-400 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      )}
+
       {editingVenta && <EditVentaModal venta={editingVenta} onClose={() => setEditingVenta(null)} />}
     </div>
   );

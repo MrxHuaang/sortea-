@@ -192,16 +192,15 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Cantidad de Boletas</label>
-                <select 
+                <input 
+                  type="number" 
+                  min={1}
+                  max={totalBoletas}
                   value={cantidad}
-                  onChange={(e) => setCantidad(Number(e.target.value))}
-                  className="w-full bg-white p-5 rounded-2xl border-2 border-transparent focus:border-zinc-900 outline-none transition-all font-bold cursor-pointer"
-                >
-                  <option value={10}>10 Boletas</option>
-                  <option value={20}>20 Boletas</option>
-                  <option value={50}>50 Boletas</option>
-                  <option value={100}>100 Boletas</option>
-                </select>
+                  onChange={(e) => setCantidad(Math.max(1, Number(e.target.value)))}
+                  className="w-full bg-white p-5 rounded-2xl border-2 border-transparent focus:border-zinc-900 outline-none transition-all font-bold"
+                  placeholder="Ej: 20"
+                />
               </div>
             </div>
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { onSnapshot, doc, collection, updateDoc } from "firebase/firestore";
+import { onSnapshot, doc, collection, updateDoc, writeBatch, deleteField } from "firebase/firestore";
 import { Config, Venta } from "@/types";
 import ConfigForm from "@/components/ConfigForm";
 import PasswordModal from "@/components/PasswordModal";
@@ -121,6 +121,97 @@ export default function AdminPage() {
     }
   };
 
+  const standardizeVentas = async () => {
+    if (!confirm("¿Deseas estandarizar todos los registros al formato nuevo? (Esto moverá el campo 'numero' a 'numeros boletas')")) return;
+    
+    try {
+      const batch = writeBatch(db);
+      let count = 0;
+      
+      ventas.forEach(v => {
+        if (v.numero !== undefined && (!v["numeros boletas"] || v["numeros boletas"].length === 0)) {
+          batch.update(doc(db, "ventas", v.id), {
+            "numeros boletas": [v.numero],
+            numero: deleteField()
+          });
+          count++;
+        }
+      });
+
+      if (count > 0) {
+        await batch.commit();
+        alert(`Se estandarizaron ${count} registros correctamente.`);
+      } else {
+        alert("Todos los registros ya están en el formato nuevo.");
+      }
+    } catch (error) {
+      console.error("Error al estandarizar:", error);
+      alert("Hubo un error al procesar la estandarización.");
+    }
+  };
+
+  const consolidateVentas = async () => {
+    if (!confirm("¿Deseas consolidar los registros duplicados? Esto unirá todas las compras de la misma persona (mismo nombre y contacto) en un solo registro, igual que la compra de Alveiro.")) return;
+    
+    try {
+      const groups: { [key: string]: Venta[] } = {};
+      
+      // Agrupar por nombre y contacto (ignora mayúsculas/minúsculas y espacios extra)
+      ventas.forEach(v => {
+        const key = `${v.nombre.trim().toLowerCase()}_${v.contacto.trim().toLowerCase()}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(v);
+      });
+
+      const batch = writeBatch(db);
+      let updatesCount = 0;
+      let deletesCount = 0;
+
+      Object.values(groups).forEach(group => {
+        if (group.length > 1) {
+          // Extraer todos los números de todos los registros del grupo
+          const allNumbers = new Set<number>();
+          group.forEach(v => {
+            if (v.numero !== undefined) allNumbers.add(v.numero);
+            if (v["numeros boletas"] && Array.isArray(v["numeros boletas"])) {
+              v["numeros boletas"].forEach(n => allNumbers.add(n));
+            }
+          });
+
+          // Ordenar registros por fecha para mantener el más antiguo como principal
+          const sortedGroup = [...group].sort((a, b) => 
+            (a.creadoEn?.toMillis() || 0) - (b.creadoEn?.toMillis() || 0)
+          );
+          
+          const [main, ...others] = sortedGroup;
+          
+          // Actualizar el registro principal con la lista completa de números
+          batch.update(doc(db, "ventas", main.id), {
+            "numeros boletas": Array.from(allNumbers).sort((a, b) => a - b),
+            numero: deleteField()
+          });
+          updatesCount++;
+
+          // Eliminar los registros duplicados
+          others.forEach(other => {
+            batch.delete(doc(db, "ventas", other.id));
+            deletesCount++;
+          });
+        }
+      });
+
+      if (deletesCount > 0) {
+        await batch.commit();
+        alert(`¡Éxito! Se consolidaron ${updatesCount} personas y se eliminaron ${deletesCount} registros duplicados.`);
+      } else {
+        alert("No se encontraron registros duplicados para consolidar.");
+      }
+    } catch (error) {
+      console.error("Error al consolidar:", error);
+      alert("Hubo un error durante la consolidación.");
+    }
+  };
+
   if (isAdmin === null) return null;
   if (!isAdmin) return <PasswordModal onSuccess={() => setIsAdmin(true)} />;
   if (error) return <div className="p-10 text-center text-red-500 font-bold bg-white min-h-screen">{error}</div>;
@@ -135,14 +226,25 @@ export default function AdminPage() {
 
   const pagadas = ventas.filter(v => v.pago === "pagado");
   const pendientes = ventas.filter(v => v.pago === "pendiente");
-  const totalRecaudado = pagadas.length * config.precioBoleta;
+
+  // Función para contar boletas de una venta (Soporta formato antiguo y nuevo)
+  const getTicketsCount = (v: Venta) => {
+    if (v["numeros boletas"] && Array.isArray(v["numeros boletas"])) {
+      return v["numeros boletas"].length;
+    }
+    return v.numero !== undefined ? 1 : 0;
+  };
+
+  const totalTicketsVendidos = ventas.reduce((acc, v) => acc + getTicketsCount(v), 0);
+  const totalTicketsPagados = pagadas.reduce((acc, v) => acc + getTicketsCount(v), 0);
+  const totalRecaudado = totalTicketsPagados * config.precioBoleta;
   const porcentajeMeta = Math.min((totalRecaudado / config.meta) * 100, 100);
 
   const tabs = [
     { id: "dashboard", label: "Resumen", icon: LayoutDashboard },
     { id: "config", label: "Configuración", icon: Settings },
-    { id: "pagadas", label: "Confirmadas", icon: CheckCircle2, count: pagadas.length },
-    { id: "pendientes", label: "Pendientes", icon: Clock, count: pendientes.length },
+    { id: "pagadas", label: "Confirmadas", icon: CheckCircle2, count: totalTicketsPagados },
+    { id: "pendientes", label: "Pendientes", icon: Clock, count: pendientes.reduce((acc, v) => acc + getTicketsCount(v), 0) },
     { id: "hojas", label: "Hojas Físicas", icon: FileText },
   ];
 
@@ -234,37 +336,51 @@ export default function AdminPage() {
                 </div>
                 <h2 className="text-5xl md:text-7xl font-black text-zinc-900 tracking-tighter uppercase leading-none italic">Análisis</h2>
               </div>
-              <button 
-                onClick={() => setIsDrawModalOpen(true)}
-                className="bg-amber-400 hover:bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-400/20 flex items-center gap-3 transition-all cursor-pointer"
-              >
-                <Trophy size={18} />
-                Realizar Sorteo
-              </button>
+              <div className="flex flex-wrap gap-4">
+                <button 
+                  onClick={standardizeVentas}
+                  className="bg-zinc-100 hover:bg-zinc-200 text-zinc-600 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
+                >
+                  Estandarizar Datos
+                </button>
+                <button 
+                  onClick={consolidateVentas}
+                  className="bg-zinc-100 hover:bg-zinc-200 text-zinc-600 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
+                >
+                  Consolidar Duplicados
+                </button>
+                <button 
+                  onClick={() => setIsDrawModalOpen(true)}
+                  className="bg-amber-400 hover:bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-400/20 flex items-center gap-3 transition-all cursor-pointer"
+                >
+                  <Trophy size={18} />
+                  Realizar Sorteo
+                </button>
+              </div>
             </header>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
               <div className="group space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300 group-hover:text-zinc-900 transition-colors italic">Recaudación Real</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 transition-colors italic">Recaudación Real</p>
                 <h3 className="text-5xl md:text-6xl font-black text-zinc-900 tracking-tighter leading-none">{formatCurrency(totalRecaudado)}</h3>
                 <div className="space-y-3">
                   <div className="w-full bg-zinc-50 h-2 rounded-full overflow-hidden border border-zinc-100 transition-colors">
                     <div className="bg-zinc-900 h-full transition-all duration-1000 ease-out" style={{ width: `${porcentajeMeta}%` }} />
                   </div>
-                  <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest text-right">{porcentajeMeta.toFixed(1)}% de la meta</p>
+                  <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-right">{porcentajeMeta.toFixed(1)}% de la meta</p>
                 </div>
               </div>
 
               <div className="group space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300 group-hover:text-zinc-900 transition-colors italic">Base de Datos</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 transition-colors italic">Base de Datos</p>
                 <h3 className="text-5xl md:text-6xl font-black text-zinc-900 tracking-tighter leading-none">{ventas.length}</h3>
-                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{pagadas.length} Registros Confirmados</p>
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{pagadas.length} Registros Confirmados</p>
               </div>
 
               <div className="group space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300 group-hover:text-zinc-900 transition-colors italic">Acciones Pendientes</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 transition-colors italic">Acciones Pendientes</p>
                 <h3 className="text-5xl md:text-6xl font-black text-zinc-900 tracking-tighter leading-none">{pendientes.length}</h3>
-                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Validación de pagos requerida</p>
+                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Validación de pagos requerida</p>
               </div>
             </div>
 

@@ -13,7 +13,10 @@ interface TicketGridProps {
 
 export default function TicketGrid({ total, ventas, onSelectTicket, cifrasJuego = 3 }: TicketGridProps) {
   const getTicketStatus = (numero: number) => {
-    const venta = ventas.find((v) => v.numero === numero);
+    const venta = ventas.find((v) => 
+      v.numero === numero || 
+      (v["numeros boletas"] && Array.isArray(v["numeros boletas"]) && v["numeros boletas"].includes(numero))
+    );
     if (!venta) return "disponible";
     
     if (venta.tipo === "fisica") return "fisica";

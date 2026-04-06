@@ -240,20 +240,20 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
                           </div>
                           <div>
                             <h4 className="text-xl font-black text-zinc-900 uppercase italic">{hoja.nombre}</h4>
-                            <p className="text-[10px] font-black text-zinc-300 uppercase tracking-widest mt-1">{numeros.length} Boletas Asignadas</p>
+                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{numeros.length} Boletas Asignadas</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Link 
                             href={`/admin/hoja/${hoja.id}`}
                             target="_blank"
-                            className="p-4 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-2xl transition-all cursor-pointer"
+                            className="p-4 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 rounded-2xl transition-all cursor-pointer"
                           >
                             <Printer size={20} />
                           </Link>
                           <button 
                             onClick={() => eliminarHoja(hoja.id, hoja)}
-                            className="p-4 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all cursor-pointer"
+                            className="p-4 text-zinc-500 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all cursor-pointer"
                           >
                             <Trash2 size={20} />
                           </button>
@@ -262,7 +262,7 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
 
                       <div className="flex flex-wrap gap-2">
                         {numeros.map((num) => (
-                          <div key={num} className="w-10 h-10 bg-zinc-50 rounded-xl flex items-center justify-center text-[10px] font-black text-zinc-400 border border-zinc-100 group-hover:border-zinc-200 group-hover:bg-white transition-all">
+                          <div key={num} className="w-10 h-10 bg-zinc-50 rounded-xl flex items-center justify-center text-[10px] font-black text-zinc-600 border border-zinc-100 group-hover:border-zinc-200 group-hover:bg-white transition-all">
                             {num.toString().padStart(3, "0")}
                           </div>
                         ))}

@@ -150,6 +150,13 @@ export default function Home() {
     );
   }
 
+  const totalTicketsVendidos = ventas.reduce((acc, v) => {
+    if (v["numeros boletas"] && Array.isArray(v["numeros boletas"])) {
+      return acc + v["numeros boletas"].length;
+    }
+    return acc + (v.numero !== undefined ? 1 : 0);
+  }, 0);
+
   return (
     <>
       <Navbar />
@@ -187,17 +194,17 @@ export default function Home() {
               <div className="flex justify-between items-end">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Progreso de Ventas</p>
-                  <p className="text-xl font-black text-zinc-900 italic">Meta del {((ventas.length / config.totalBoletas) * 100).toFixed(0)}% cumplida</p>
+                  <p className="text-xl font-black text-zinc-900 italic">Meta del {((totalTicketsVendidos / config.totalBoletas) * 100).toFixed(0)}% cumplida</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Faltan</p>
-                  <p className="text-xl font-black text-amber-500">{config.totalBoletas - ventas.length} Boletas</p>
+                  <p className="text-xl font-black text-amber-500">{config.totalBoletas - totalTicketsVendidos} Boletas</p>
                 </div>
               </div>
               <div className="h-3 w-full bg-zinc-100 rounded-full overflow-hidden border border-zinc-200 shadow-inner">
                 <div 
                   className="h-full bg-zinc-900 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: `${(ventas.length / config.totalBoletas) * 100}%` }}
+                  style={{ width: `${(totalTicketsVendidos / config.totalBoletas) * 100}%` }}
                 />
               </div>
             </div>

@@ -148,6 +148,8 @@ export default function VentasLista({ ventas }: VentasListaProps) {
     setCurrentPage(1); // Resetear a página 1 cuando cambien los filtros o búsqueda
   }, [filtroPago, filtroTipo, busqueda]);
 
+  const totalTicketsFiltrados = ventasFiltradas.reduce((acc, v) => acc + getNumbers(v).length, 0);
+
   return (
     <div className="bg-white rounded-[2rem] md:rounded-[3rem] border border-zinc-100 overflow-hidden shadow-sm transition-colors">
       {/* Header con Filtros */}
@@ -156,7 +158,11 @@ export default function VentasLista({ ventas }: VentasListaProps) {
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <div className="space-y-1">
               <h2 className="text-2xl md:text-3xl font-black text-zinc-900 tracking-tight italic">Compradores</h2>
-              <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">{ventasFiltradas.length} Registros encontrados</p>
+              <div className="flex gap-3">
+                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{ventasFiltradas.length} Registros</p>
+                <span className="text-zinc-200">|</span>
+                <p className="text-amber-500 text-[10px] font-black uppercase tracking-widest">{totalTicketsFiltrados} Boletas</p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               {selectedIds.length > 0 && (
@@ -251,19 +257,19 @@ export default function VentasLista({ ventas }: VentasListaProps) {
                             {formatTicketNumber(n)}
                           </div>
                         ))}
-                        {nums.length > 2 && <span className="text-[9px] font-black text-zinc-300 self-center">+{nums.length - 2}</span>}
+                        {nums.length > 2 && <span className="text-[9px] font-black text-zinc-500 self-center">+{nums.length - 2}</span>}
                       </div>
                     </td>
                     <td className="px-4 py-6">
                       <div className="flex flex-col">
                         <span className="text-sm font-black text-zinc-900 uppercase leading-none italic">{venta.nombre}</span>
-                        <span className="text-[10px] font-bold text-zinc-500 mt-1">{venta.contacto}</span>
+                        <span className="text-[10px] font-bold text-zinc-600 mt-1">{venta.contacto}</span>
                       </div>
                     </td>
                     <td className="px-4 py-6 text-center">
                       <div className="flex flex-col items-center gap-0.5">
                         <span className="text-[11px] font-black text-zinc-900">{date?.toLocaleDateString() || "--"}</span>
-                        <div className="flex items-center gap-1 text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">
+                        <div className="flex items-center gap-1 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
                           <Clock size={10} />
                           {date?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "--"}
                         </div>

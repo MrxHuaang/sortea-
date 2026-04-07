@@ -24,6 +24,21 @@ export default function VentasLista({ ventas }: VentasListaProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const handleFiltroPago = (f: "todas" | "pagado" | "pendiente") => {
+    setFiltroPago(f);
+    setCurrentPage(1);
+  };
+
+  const handleFiltroTipo = (f: "todos" | "online" | "fisica") => {
+    setFiltroTipo(f);
+    setCurrentPage(1);
+  };
+
+  const handleBusqueda = (val: string) => {
+    setBusqueda(val);
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "config", "actual"), (snap) => {
       if (snap.exists()) setConfig(snap.data() as Config);
@@ -155,10 +170,6 @@ export default function VentasLista({ ventas }: VentasListaProps) {
   const paginatedVentas = ventasFiltradas.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(ventasFiltradas.length / itemsPerPage);
 
-  useEffect(() => {
-    setCurrentPage(1); // Resetear a página 1 cuando cambien los filtros o búsqueda
-  }, [filtroPago, filtroTipo, busqueda]);
-
   const totalTicketsFiltrados = ventasFiltradas.reduce((acc, v) => acc + getNumbers(v).length, 0);
 
   return (
@@ -198,7 +209,7 @@ export default function VentasLista({ ventas }: VentasListaProps) {
               type="text" 
               placeholder="Buscar por nombre, boleta o celular..." 
               value={busqueda} 
-              onChange={(e) => setBusqueda(e.target.value)} 
+              onChange={(e) => handleBusqueda(e.target.value)} 
               className="w-full pl-12 pr-6 py-4 bg-white border border-zinc-200 rounded-2xl text-xs font-bold outline-none focus:border-zinc-900 transition-all text-zinc-900 shadow-sm" 
             />
           </div>
@@ -211,7 +222,7 @@ export default function VentasLista({ ventas }: VentasListaProps) {
               <Filter size={12} /> Pago
             </div>
             {(["todas", "pagado", "pendiente"] as const).map((f) => (
-              <button key={f} onClick={() => setFiltroPago(f)} className={cn("px-4 py-2 text-[9px] font-black rounded-xl transition-all uppercase tracking-widest cursor-pointer", filtroPago === f ? "bg-zinc-900 text-white shadow-md" : "text-zinc-400 hover:text-zinc-600")}>
+              <button key={f} onClick={() => handleFiltroPago(f)} className={cn("px-4 py-2 text-[9px] font-black rounded-xl transition-all uppercase tracking-widest cursor-pointer", filtroPago === f ? "bg-zinc-900 text-white shadow-md" : "text-zinc-400 hover:text-zinc-600")}>
                 {f}
               </button>
             ))}
@@ -222,7 +233,7 @@ export default function VentasLista({ ventas }: VentasListaProps) {
               <Filter size={12} /> Origen
             </div>
             {(["todos", "online", "fisica"] as const).map((f) => (
-              <button key={f} onClick={() => setFiltroTipo(f)} className={cn("px-4 py-2 text-[9px] font-black rounded-xl transition-all uppercase tracking-widest cursor-pointer", filtroTipo === f ? "bg-zinc-900 text-white shadow-md" : "text-zinc-400 hover:text-zinc-600")}>
+              <button key={f} onClick={() => handleFiltroTipo(f)} className={cn("px-4 py-2 text-[9px] font-black rounded-xl transition-all uppercase tracking-widest cursor-pointer", filtroTipo === f ? "bg-zinc-900 text-white shadow-md" : "text-zinc-400 hover:text-zinc-600")}>
                 {f}
               </button>
             ))}

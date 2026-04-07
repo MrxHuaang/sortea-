@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot, doc, DocumentSnapshot } from "firebase/firestore";
-import { Venta } from "@/types";
+import { Venta, Config } from "@/types";
 import { Search, Phone, Clock, CheckCircle2, MessageCircle, Info, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
@@ -11,7 +11,7 @@ import Navbar from "@/components/Navbar";
 export default function StatusPage() {
   const [celular, setCelular] = useState("");
   const [ventas, setVentas] = useState<Venta[]>([]);
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
@@ -21,7 +21,7 @@ export default function StatusPage() {
     
     // Cargar config para el padding de los números
     const unsub = onSnapshot(doc(db, "config", "actual"), (docSnap: DocumentSnapshot) => {
-      if (docSnap.exists()) setConfig(docSnap.data());
+      if (docSnap.exists()) setConfig(docSnap.data() as Config);
     });
     return () => unsub();
   }, []);

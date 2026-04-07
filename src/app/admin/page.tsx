@@ -2,7 +2,17 @@
 
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { onSnapshot, doc, collection, updateDoc, writeBatch, deleteField } from "firebase/firestore";
+import { 
+  onSnapshot, 
+  doc, 
+  collection, 
+  updateDoc, 
+  writeBatch, 
+  deleteField,
+  getDocs,
+  query,
+  where 
+} from "firebase/firestore";
 import { Config, Venta } from "@/types";
 import ConfigForm from "@/components/ConfigForm";
 import PasswordModal from "@/components/PasswordModal";
@@ -21,7 +31,9 @@ import {
   Menu,
   X,
   Trophy,
-  Trash2
+  Trash2,
+  ChevronDown,
+  Wrench
 } from "lucide-react";
 import { checkAuth, logout } from "@/app/actions";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -36,6 +48,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
 
   // Estados para sorteo
   const [loteroNumber, setLoteroNumber] = useState("");
@@ -212,6 +225,35 @@ export default function AdminPage() {
     }
   };
 
+  const cleanOrphanSales = async () => {
+    if (!confirm("¿Deseas limpiar registros de ventas huérfanos? Esto liberará boletas de hojas que ya fueron borradas.")) return;
+    
+    try {
+      const hojasSnapshot = await getDocs(collection(db, "hojas"));
+      const existingHojaIds = new Set(hojasSnapshot.docs.map(d => d.id));
+      
+      const batch = writeBatch(db);
+      let count = 0;
+      
+      ventas.forEach(v => {
+        if (v.tipo === "fisica" && v.hojaId && !existingHojaIds.has(v.hojaId)) {
+          batch.delete(doc(db, "ventas", v.id));
+          count++;
+        }
+      });
+
+      if (count > 0) {
+        await batch.commit();
+        alert(`Se liberaron ${count} registros de boletas físicas huérfanas.`);
+      } else {
+        alert("No se encontraron registros huérfanos.");
+      }
+    } catch (error) {
+      console.error("Error al limpiar:", error);
+      alert("Hubo un error al procesar la limpieza.");
+    }
+  };
+
   if (isAdmin === null) return null;
   if (!isAdmin) return <PasswordModal onSuccess={() => setIsAdmin(true)} />;
   if (error) return <div className="p-10 text-center text-red-500 font-bold bg-white min-h-screen">{error}</div>;
@@ -339,19 +381,45 @@ export default function AdminPage() {
                 </div>
                 <h2 className="text-5xl md:text-7xl font-black text-zinc-900 tracking-tighter uppercase leading-none italic">Análisis</h2>
               </div>
-              <div className="flex flex-wrap gap-4">
-                <button 
-                  onClick={standardizeVentas}
-                  className="bg-zinc-100 hover:bg-zinc-200 text-zinc-600 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                >
-                  Estandarizar Datos
-                </button>
-                <button 
-                  onClick={consolidateVentas}
-                  className="bg-zinc-100 hover:bg-zinc-200 text-zinc-600 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                >
-                  Consolidar Duplicados
-                </button>
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Menú de Herramientas Discreto */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsToolsOpen(!isToolsOpen)}
+                    className={cn(
+                      "p-4 rounded-2xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest cursor-pointer",
+                      isToolsOpen ? "bg-zinc-900 text-white shadow-xl" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                    )}
+                  >
+                    <Wrench size={16} />
+                    <span className="hidden sm:inline">Herramientas</span>
+                    <ChevronDown size={14} className={cn("transition-transform", isToolsOpen && "rotate-180")} />
+                  </button>
+
+                  {isToolsOpen && (
+                    <div className="absolute right-0 mt-3 w-64 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-zinc-100 p-3 z-[150] animate-in fade-in slide-in-from-top-4 duration-300">
+                      <button 
+                        onClick={() => { standardizeVentas(); setIsToolsOpen(false); }}
+                        className="w-full text-left px-5 py-4 rounded-2xl hover:bg-zinc-50 text-[10px] font-black uppercase tracking-widest text-zinc-600 transition-colors cursor-pointer"
+                      >
+                        Estandarizar Datos
+                      </button>
+                      <button 
+                        onClick={() => { consolidateVentas(); setIsToolsOpen(false); }}
+                        className="w-full text-left px-5 py-4 rounded-2xl hover:bg-zinc-50 text-[10px] font-black uppercase tracking-widest text-zinc-600 transition-colors cursor-pointer"
+                      >
+                        Consolidar Duplicados
+                      </button>
+                      <button 
+                        onClick={() => { cleanOrphanSales(); setIsToolsOpen(false); }}
+                        className="w-full text-left px-5 py-4 rounded-2xl hover:bg-red-50 text-[10px] font-black uppercase tracking-widest text-red-600 transition-colors cursor-pointer"
+                      >
+                        Limpiar Huérfanos
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <button 
                   onClick={() => setIsDrawModalOpen(true)}
                   className="bg-amber-400 hover:bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-400/20 flex items-center gap-3 transition-all cursor-pointer"

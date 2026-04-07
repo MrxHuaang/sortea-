@@ -49,10 +49,10 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
     try {
       const q = query(collection(db, "ventas"));
       const snapshot = await getDocs(q);
-      const ventasData = snapshot.docs.map(d => d.data());
+      const ventasData = snapshot.docs.map(d => d.data() as Venta);
       
       const numerosVendidos = new Set<number>();
-      ventasData.forEach((v: any) => {
+      ventasData.forEach((v) => {
         if (v.numero !== undefined) numerosVendidos.add(v.numero);
         if (v["numeros boletas"] && Array.isArray(v["numeros boletas"])) {
           v["numeros boletas"].forEach((n: number) => numerosVendidos.add(n));
@@ -111,21 +111,15 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
   const eliminarHoja = async (id: string, sheet: Sheet) => {
     if (!confirm("¿Eliminar esta hoja? Los números volverán a estar disponibles.")) return;
 
-    const numeros = sheet["numeros boletas"] || sheet.numeros || sheet.boletas || [];
-
     try {
       const batch = writeBatch(db);
       batch.delete(doc(db, "hojas", id));
 
-      // Buscar y eliminar el registro de venta asociado
-      const q = query(collection(db, "ventas"), where("nombre", "==", `Hoja: ${sheet.nombre}`));
+      // Buscar y eliminar el registro de venta asociado por hojaId (más seguro)
+      const q = query(collection(db, "ventas"), where("hojaId", "==", id));
       const snapshot = await getDocs(q);
       snapshot.docs.forEach(d => {
-        // Verificar que coincidan los números para mayor seguridad
-        const vNums = d.data()["numeros boletas"] || [];
-        if (JSON.stringify(vNums.sort()) === JSON.stringify(numeros.sort())) {
-          batch.delete(d.ref);
-        }
+        batch.delete(d.ref);
       });
 
       await batch.commit();

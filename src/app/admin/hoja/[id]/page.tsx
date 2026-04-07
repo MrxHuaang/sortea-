@@ -7,7 +7,6 @@ import {
   onSnapshot, 
   collection, 
   query, 
-  where, 
   writeBatch, 
   serverTimestamp, 
   arrayRemove

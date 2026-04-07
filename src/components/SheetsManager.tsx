@@ -76,6 +76,7 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
 
       const batch = writeBatch(db);
       const sheetRef = doc(collection(db, "hojas"));
+      const sheetId = sheetRef.id;
       
       // GUARDAR CON EL NOMBRE CORRECTO: "numeros boletas"
       batch.set(sheetRef, {
@@ -90,8 +91,9 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
         "numeros boletas": seleccionados,
         nombre: `Hoja: ${nombre}`,
         contacto: "Venta Física",
-        pago: "pagado",
+        pago: "pendiente",
         tipo: "fisica",
+        hojaId: sheetId,
         creadoEn: serverTimestamp()
       });
 
@@ -231,6 +233,14 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
               <div className="space-y-6">
                 {currentItems.map((hoja) => {
                   const numeros = getNumbers(hoja);
+                  const relatedVentas = ventas.filter(v => v.hojaId === hoja.id);
+                  const vendidas = relatedVentas.filter(v => v.pago === "pagado").reduce((acc, v) => {
+                    const count = (v["numeros boletas"] || []).filter(n => numeros.includes(n)).length;
+                    return acc + count;
+                  }, 0);
+                  
+                  const progress = (vendidas / numeros.length) * 100;
+
                   return (
                     <div key={hoja.id} className="group bg-white border border-zinc-100 p-8 rounded-[2.5rem] hover:shadow-2xl hover:shadow-zinc-100 transition-all">
                       <div className="flex items-start justify-between gap-6 mb-8">
@@ -240,13 +250,21 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
                           </div>
                           <div>
                             <h4 className="text-xl font-black text-zinc-900 uppercase italic">{hoja.nombre}</h4>
-                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{numeros.length} Boletas Asignadas</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{numeros.length} Boletas</span>
+                              <span className="w-1 h-1 bg-zinc-200 rounded-full"></span>
+                              <span className={cn(
+                                "px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
+                                vendidas === numeros.length ? "bg-emerald-100 text-emerald-600" : "bg-zinc-100 text-zinc-500"
+                              )}>
+                                {vendidas} / {numeros.length} Vendidas
+                              </span>
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Link 
                             href={`/admin/hoja/${hoja.id}`}
-                            target="_blank"
                             className="p-4 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 rounded-2xl transition-all cursor-pointer"
                           >
                             <Printer size={20} />
@@ -260,12 +278,33 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
                         </div>
                       </div>
 
+                      {/* Barra de progreso */}
+                      <div className="mb-8 space-y-2">
+                        <div className="w-full bg-zinc-50 h-1.5 rounded-full overflow-hidden border border-zinc-100">
+                          <div 
+                            className="bg-zinc-900 h-full transition-all duration-1000"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+
                       <div className="flex flex-wrap gap-2">
-                        {numeros.map((num) => (
-                          <div key={num} className="w-10 h-10 bg-zinc-50 rounded-xl flex items-center justify-center text-[10px] font-black text-zinc-600 border border-zinc-100 group-hover:border-zinc-200 group-hover:bg-white transition-all">
-                            {num.toString().padStart(3, "0")}
-                          </div>
-                        ))}
+                        {numeros.map((num) => {
+                          const isSold = relatedVentas.some(v => v.pago === "pagado" && (v["numeros boletas"] || []).includes(num));
+                          return (
+                            <div 
+                              key={num} 
+                              className={cn(
+                                "w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-black border transition-all",
+                                isSold 
+                                  ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
+                                  : "bg-zinc-50 text-zinc-600 border-zinc-100 group-hover:border-zinc-200 group-hover:bg-white"
+                              )}
+                            >
+                              {num.toString().padStart(3, "0")}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );

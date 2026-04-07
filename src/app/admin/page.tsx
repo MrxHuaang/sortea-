@@ -224,8 +224,9 @@ export default function AdminPage() {
     );
   }
 
-  const pagadas = ventas.filter(v => v.pago === "pagado");
-  const pendientes = ventas.filter(v => v.pago === "pendiente");
+  const pagadas = ventas.filter(v => v.pago === "pagado" && v.tipo !== "fisica");
+  const pendientes = ventas.filter(v => v.pago === "pendiente" && v.tipo !== "fisica");
+  const fisicas = ventas.filter(v => v.tipo === "fisica");
 
   // Función para contar boletas de una venta (Soporta formato antiguo y nuevo)
   const getTicketsCount = (v: Venta) => {
@@ -235,8 +236,10 @@ export default function AdminPage() {
     return v.numero !== undefined ? 1 : 0;
   };
 
-  const totalTicketsVendidos = ventas.reduce((acc, v) => acc + getTicketsCount(v), 0);
   const totalTicketsPagados = pagadas.reduce((acc, v) => acc + getTicketsCount(v), 0);
+  const totalTicketsPendientes = pendientes.reduce((acc, v) => acc + getTicketsCount(v), 0);
+  const totalTicketsFisicos = fisicas.reduce((acc, v) => acc + getTicketsCount(v), 0);
+  
   const totalRecaudado = totalTicketsPagados * config.precioBoleta;
   const porcentajeMeta = Math.min((totalRecaudado / config.meta) * 100, 100);
 
@@ -244,8 +247,8 @@ export default function AdminPage() {
     { id: "dashboard", label: "Resumen", icon: LayoutDashboard },
     { id: "config", label: "Configuración", icon: Settings },
     { id: "pagadas", label: "Confirmadas", icon: CheckCircle2, count: totalTicketsPagados },
-    { id: "pendientes", label: "Pendientes", icon: Clock, count: pendientes.reduce((acc, v) => acc + getTicketsCount(v), 0) },
-    { id: "hojas", label: "Hojas Físicas", icon: FileText },
+    { id: "pendientes", label: "Pendientes", icon: Clock, count: totalTicketsPendientes },
+    { id: "hojas", label: "Hojas Físicas", icon: FileText, count: totalTicketsFisicos },
   ];
 
   return (

@@ -87,8 +87,19 @@ export default function VentasLista({ ventas }: VentasListaProps) {
 
   const shareWhatsApp = (venta: Venta) => {
     const nums = getNumbers(venta).map(n => formatTicketNumber(n)).join(", ");
-    const text = `¡Hola ${venta.nombre}! 👋\n\nConfirmamos tu reserva (${nums}) como PAGADA. ¡Gracias por participar! 🍀`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    const tel = venta.contacto.replace(/\D/g, '');
+    
+    const disclaimer = "Este es un mensaje automatico generado por la plataforma Sortea para recordarle que tiene boletas pendientes por confirmar en la rifa.";
+    const agradecimiento = "Aprecio muchisimo su registro, cada boleta es un granito de arena para este sueño.";
+    
+    let text = "";
+    if (venta.pago === "pendiente") {
+      text = `Hola ${venta.nombre}.\n\n${disclaimer}\n\n${agradecimiento}\n\nLos numeros que aparto son: ${nums}.\n\nCuando pueda, le agradeceria enviarme el comprobante de pago por este medio para dejarlas confirmadas. Cualquier duda puede preguntarme por aqui mismo. Muchas gracias por el apoyo.`;
+    } else {
+      text = `Hola ${venta.nombre}.\n\nEste es un mensaje automatico de la plataforma Sortea para agradecerle de todo corazon por su apoyo.\n\nSus boletas (${nums}) ya estan confirmadas satisfactoriamente. ¡Mucha suerte en el sorteo! Cualquier duda quedo atento por este medio.`;
+    }
+    
+    window.open(`https://wa.me/57${tel}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const toggleSelect = (id: string) => {

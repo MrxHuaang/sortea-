@@ -342,7 +342,7 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
                 </div>
                 
                 <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
-                  <button onClick={markSelectedAsSold} disabled={batchLoading} className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer active:scale-95 flex items-center gap-2">
+                  <button onClick={() => processSaleAction(selectedNumbers, true)} disabled={batchLoading} className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer active:scale-95 flex items-center gap-2">
                     {batchLoading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Vender
                   </button>
                   <button onClick={() => releaseAction(selectedNumbers, true)} disabled={batchLoading} className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer active:scale-95">

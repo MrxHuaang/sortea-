@@ -7,6 +7,7 @@ import {
   onSnapshot, 
   collection, 
   query, 
+  where,
   writeBatch, 
   serverTimestamp, 
   arrayRemove
@@ -43,6 +44,7 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
+    // Escuchamos el documento de la hoja
     const unsubHoja = onSnapshot(doc(db, "hojas", id), (docSnap) => {
       if (docSnap.exists()) {
         setHoja({ id: docSnap.id, ...docSnap.data() } as Sheet);
@@ -55,8 +57,10 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
       }
     });
 
-    // Escuchamos todas las ventas para garantizar que no haya cruces de datos
-    const q = query(collection(db, "ventas"));
+    // SOLUCIÓN AL BUG: Escuchamos las ventas relacionadas por hojaId en tiempo real.
+    // Al filtrar por hojaId, garantizamos que cualquier cambio (creación o eliminación)
+    // en la colección 'ventas' se refleje inmediatamente en esta vista.
+    const q = query(collection(db, "ventas"), where("hojaId", "==", id));
     const unsubVentas = onSnapshot(q, (snapshot) => {
       const vData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Venta));
       setVentasRelacionadas(vData);
@@ -80,10 +84,19 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
 
   const allNumbers = hoja["numeros boletas"] || hoja.numeros || hoja.boletas || [];
   
-  // LOGICA DE ESTADO SEGURA: Filtramos las ventas que REALMENTE tienen estos números
+  /**
+   * ESTADO REAL DESDE VENTAS:
+   * El estado de cada boleta se determina exclusivamente por su presencia en la colección 'ventas'.
+   * Si no existe un registro en 'ventas', la boleta vuelve a su estado natural de "física" (en calle).
+   */
   const getStatus = (num: number) => {
-    const venta = ventasRelacionadas.find(v => (v["numeros boletas"] || []).includes(num));
-    if (!venta) return "disponible";
+    const venta = ventasRelacionadas.find(v => 
+      (v["numeros boletas"] || []).includes(num) || v.numero === num
+    );
+    
+    // Si no hay venta vinculada, por defecto es física (en calle/disponible para venta)
+    if (!venta) return "fisica";
+    
     if (venta.tipo === "fisica") return "fisica";
     if (venta.pago === "pagado") return "pagada";
     return "pendiente";
@@ -96,9 +109,7 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
     );
   };
 
-  // PROCESO DE VENTA ULTRA-SEGURO
   const processSaleAction = async (numbers: number[], isBatch: boolean = false) => {
-    // 1. Doble verificación de estado (para evitar duplicados por clics rápidos)
     const validNumbers = numbers.filter(n => getStatus(n) === "fisica");
     if (validNumbers.length === 0) {
       if (!isBatch) alert("Error: Estas boletas ya no están disponibles para venta física.");
@@ -109,7 +120,7 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
     try {
       const batch = writeBatch(db);
       
-      // Encontramos el contenedor física que tiene estos números
+      // Actualizamos el contenedor físico (pago pendiente) quitando los números que se van a marcar como pagados
       const contenedor = ventasRelacionadas.find(v => 
         v.tipo === "fisica" && (v["numeros boletas"] || []).some(n => validNumbers.includes(n))
       );
@@ -120,7 +131,7 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
         });
       }
 
-      // Creamos el registro de venta final
+      // Creamos el registro de venta final (pago confirmado)
       const nuevaVentaRef = doc(collection(db, "ventas"));
       batch.set(nuevaVentaRef, {
         nombre: `Venta Física: ${hoja.nombre}`,
@@ -156,7 +167,7 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
         "numeros boletas": arrayRemove(...validNumbers)
       });
 
-      // Limpiar de cualquier contenedor física o venta individual
+      // Limpiar de cualquier registro de venta asociado
       ventasRelacionadas.forEach(v => {
         const intersection = (v["numeros boletas"] || []).filter(n => validNumbers.includes(n));
         if (intersection.length > 0) {
@@ -203,7 +214,6 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
         });
       }
 
-      // Limpiar todo rastro de boletas no vendidas de esta hoja
       ventasRelacionadas.forEach(v => {
         const intersection = (v["numeros boletas"] || []).filter(n => fisicas.includes(n));
         if (intersection.length > 0) {

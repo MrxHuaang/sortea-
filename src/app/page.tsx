@@ -160,7 +160,10 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <main className="max-w-7xl mx-auto px-6 pt-32 pb-24 md:pt-48 transition-colors">
+      <main className="max-w-7xl mx-auto px-6 pt-32 pb-24 md:pt-48 transition-colors relative">
+        {/* Decorative Glow */}
+        <div className="absolute top-0 right-0 -z-10 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-amber-400/10 rounded-full blur-[100px] pointer-events-none" />
+        
         {/* Hero Section */}
         <section className="flex flex-col gap-12 mb-20 md:mb-32">
           <div className="space-y-8 max-w-5xl">
@@ -168,7 +171,7 @@ export default function Home() {
               <span className="h-[1px] w-8 bg-zinc-900"></span>
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Gran Rifa Familiar</span>
             </div>
-            <h1 className="text-5xl md:text-8xl lg:text-[10rem] font-black text-gray-900 tracking-tighter leading-[0.85] uppercase italic">
+            <h1 className="text-5xl md:text-8xl lg:text-[10rem] font-black tracking-tighter leading-[0.85] uppercase italic bg-clip-text text-transparent bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-500">
               {config.premio}
             </h1>
             
@@ -338,7 +341,7 @@ export default function Home() {
                   onClick={() => isAvailable && handleSelect(num)}
                   className={cn(
                     "aspect-square flex flex-col items-center justify-center rounded-xl md:rounded-2xl transition-all duration-300 border relative group overflow-hidden",
-                    isAvailable && !isSelected && "bg-gray-50 border-zinc-100 text-gray-400 hover:border-zinc-900 hover:text-zinc-900 cursor-pointer shadow-sm active:scale-90",
+                    isAvailable && !isSelected && "bg-gray-50 border-zinc-100 text-gray-400 hover:border-zinc-900 hover:text-zinc-900 cursor-pointer shadow-sm hover:shadow-md hover:shadow-zinc-200 hover:-translate-y-1 active:scale-90",
                     isAvailable && isSelected && "bg-white border-zinc-900 text-zinc-900 shadow-xl shadow-zinc-100 cursor-pointer",
                     status === "reservada" && "bg-amber-400 border-amber-300 text-white cursor-not-allowed opacity-90",
                     status === "bloqueada" && "bg-zinc-900 border-zinc-900 text-white cursor-not-allowed shadow-inner"
@@ -371,7 +374,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Hiliana */}
-            <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+            <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:shadow-zinc-200/50 hover:-translate-y-2 transition-all duration-300 space-y-6">
               <Image src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" style={{ height: 'auto' }} />
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular</p>
@@ -390,7 +393,7 @@ export default function Home() {
             </div>
 
             {/* Juan */}
-            <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+            <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:shadow-zinc-200/50 hover:-translate-y-2 transition-all duration-300 space-y-6">
               <Image src="/nequi.png" alt="Nequi" width={80} height={28} className="object-contain" style={{ height: 'auto' }} />
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Titular</p>
@@ -409,7 +412,7 @@ export default function Home() {
             </div>
 
             {/* Bre-b */}
-            <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+            <div className="bg-white border border-zinc-100 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:shadow-zinc-200/50 hover:-translate-y-2 transition-all duration-300 space-y-6">
               <Image src="/bre-b.png" alt="Bre-b" width={80} height={28} className="object-contain" style={{ height: 'auto' }} />
               <div className="space-y-4">
                 <div 
@@ -448,7 +451,7 @@ export default function Home() {
           "fixed bottom-8 left-1/2 -translate-x-1/2 z-[150] transition-all duration-500 ease-out transform",
           selectedNumbers.length > 0 ? "translate-y-0 opacity-100 scale-100" : "translate-y-24 opacity-0 scale-90"
         )}>
-          <div className="bg-zinc-900 text-white px-8 py-5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-8 whitespace-nowrap border border-white/10">
+          <div className="bg-zinc-900/90 backdrop-blur-xl text-white px-8 py-5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-8 whitespace-nowrap border border-white/10 hover:shadow-amber-500/20 transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-center gap-4 border-r border-white/10 pr-8">
               <div className="relative">
                 <ShoppingCart size={20} />

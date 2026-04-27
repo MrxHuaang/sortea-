@@ -201,7 +201,7 @@ export default function PurchasePage() {
                     onClick={() => isAvailable && handleSelect(num)}
                     className={cn(
                       "aspect-square rounded-xl flex items-center justify-center text-xs font-black border-2 transition-all active:scale-90 relative overflow-hidden group cursor-pointer",
-                      isAvailable && !isSelected && "bg-gray-50 border-zinc-100 text-gray-400 hover:border-zinc-900 hover:text-zinc-900",
+                      isAvailable && !isSelected && "bg-gray-50 border-zinc-100 text-gray-400 hover:border-zinc-900 hover:text-zinc-900 shadow-sm hover:shadow-md hover:shadow-zinc-200 hover:-translate-y-1",
                       isAvailable && isSelected && "bg-white border-zinc-900 text-zinc-900 shadow-xl shadow-zinc-100",
                       !isAvailable && "bg-zinc-50 border-transparent text-zinc-200 cursor-not-allowed"
                     )}
@@ -221,7 +221,7 @@ export default function PurchasePage() {
               "fixed bottom-8 left-1/2 -translate-x-1/2 z-[150] transition-all duration-500 ease-out transform",
               selectedNumbers.length > 0 ? "translate-y-0 opacity-100 scale-100" : "translate-y-24 opacity-0 scale-90"
             )}>
-              <div className="bg-zinc-900 text-white px-8 py-5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-8 whitespace-nowrap border border-white/10">
+              <div className="bg-zinc-900/90 backdrop-blur-xl text-white px-8 py-5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-8 whitespace-nowrap border border-white/10 hover:shadow-amber-500/20 transition-all duration-300 hover:-translate-y-1">
                 <div className="flex items-center gap-4 border-r border-white/10 pr-8">
                   <div className="relative">
                     <ShoppingCart size={20} />
@@ -394,7 +394,7 @@ export default function PurchasePage() {
                       <div className="grid grid-cols-1 gap-4 w-full max-w-xs">
                         <div 
                           onClick={() => copyToClipboard("3138648345")}
-                          className="group relative cursor-pointer bg-zinc-50 hover:bg-zinc-100 p-6 rounded-[2rem] border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1 w-full"
+                          className="group relative cursor-pointer bg-zinc-50 hover:bg-zinc-100 p-6 rounded-[2rem] border border-zinc-100 hover:shadow-md hover:shadow-zinc-200/50 hover:-translate-y-1 transition-all active:scale-95 flex flex-col items-center gap-1 w-full"
                         >
                           <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Hiliana Ordoñez Lasso</p>
                           <div className="flex items-center gap-3">
@@ -427,7 +427,7 @@ export default function PurchasePage() {
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div onClick={() => copyToClipboard("3213873880")} className="group relative cursor-pointer bg-gray-50 hover:bg-zinc-100 p-5 rounded-2xl border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1">
+                      <div onClick={() => copyToClipboard("3213873880")} className="group relative cursor-pointer bg-gray-50 hover:bg-zinc-100 p-5 rounded-2xl border border-zinc-100 hover:shadow-md hover:shadow-zinc-200/50 hover:-translate-y-1 transition-all active:scale-95 flex flex-col items-center gap-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Número</p>
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-black text-gray-900">3213873880</span>
@@ -436,7 +436,7 @@ export default function PurchasePage() {
                         {copiedText === "3213873880" && <div className="absolute -top-10 bg-zinc-900 text-white text-[10px] font-black px-4 py-2 rounded-lg animate-in fade-in zoom-in">¡COPIADO!</div>}
                       </div>
 
-                      <div onClick={() => copyToClipboard("@jupaor")} className="group relative cursor-pointer bg-gray-50 hover:bg-zinc-100 p-5 rounded-2xl border border-zinc-100 transition-all active:scale-95 flex flex-col items-center gap-1">
+                      <div onClick={() => copyToClipboard("@jupaor")} className="group relative cursor-pointer bg-gray-50 hover:bg-zinc-100 p-5 rounded-2xl border border-zinc-100 hover:shadow-md hover:shadow-zinc-200/50 hover:-translate-y-1 transition-all active:scale-95 flex flex-col items-center gap-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Llave</p>
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-black text-gray-900">@jupaor</span>

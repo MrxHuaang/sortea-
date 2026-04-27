@@ -8,6 +8,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { Check, Loader2, ArrowRight, MessageCircle, X, ChevronLeft, ShoppingCart, Copy, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { z } from "zod";
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 const purchaseSchema = z.object({
@@ -389,7 +390,7 @@ export default function PurchasePage() {
                   {/* Nequi */}
                   <div className="space-y-6">
                     <div className="flex flex-col items-center gap-4">
-                      <img src="/nequi.png" alt="Nequi" width={100} height={35} className="object-contain" style={{ height: 'auto' }} />
+                      <Image src="/nequi.png" alt="Nequi" width={100} height={35} className="object-contain" style={{ width: 'auto', height: 'auto' }} />
                       
                       <div className="grid grid-cols-1 gap-4 w-full max-w-xs">
                         <div 
@@ -422,7 +423,7 @@ export default function PurchasePage() {
                   {/* Bre-b */}
                   <div className="pt-10 border-t border-zinc-100 space-y-8">
                     <div className="flex flex-col items-center gap-4">
-                      <img src="/bre-b.png" alt="Bre-b" width={100} height={35} className="object-contain" style={{ height: 'auto' }} />
+                      <Image src="/bre-b.png" alt="Bre-b" width={100} height={35} className="object-contain" style={{ width: 'auto', height: 'auto' }} />
                       <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">También disponible en Bre-b</p>
                     </div>
                     
@@ -455,7 +456,7 @@ export default function PurchasePage() {
                     {showQR && (
                       <div className="pt-6 animate-in slide-in-from-top-2 duration-300">
                         <div className="bg-gray-50 rounded-[2rem] flex items-center justify-center p-6 border border-zinc-100 mx-auto w-fit">
-                          <img src="/qr-nequi.jpg" alt="QR Nequi" width={200} height={200} className="rounded-xl shadow-lg" />
+                          <Image src="/qr-nequi.jpg" alt="QR Nequi" width={200} height={200} className="rounded-xl shadow-lg" />
                         </div>
                       </div>
                     )}

@@ -431,9 +431,9 @@ export default function AdminPage() {
             </header>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
-              <div className="group space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 transition-colors italic">Recaudación Real</p>
-                <h3 className="text-5xl md:text-6xl font-black text-zinc-900 tracking-tighter leading-none">{formatCurrency(totalRecaudado)}</h3>
+              <div className="group space-y-6 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 transition-colors italic truncate">Recaudación Real</p>
+                <h3 className="text-4xl sm:text-5xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black text-zinc-900 tracking-tighter leading-none truncate">{formatCurrency(totalRecaudado)}</h3>
                 <div className="space-y-3">
                   <div className="w-full bg-zinc-50 h-2 rounded-full overflow-hidden border border-zinc-100 transition-colors">
                     <div className="bg-zinc-900 h-full transition-all duration-1000 ease-out" style={{ width: `${porcentajeMeta}%` }} />
@@ -442,16 +442,16 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="group space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 transition-colors italic">Base de Datos</p>
-                <h3 className="text-5xl md:text-6xl font-black text-zinc-900 tracking-tighter leading-none">{ventas.length}</h3>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{pagadas.length} Registros Confirmados</p>
+              <div className="group space-y-6 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 transition-colors italic truncate">Base de Datos</p>
+                <h3 className="text-4xl sm:text-5xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black text-zinc-900 tracking-tighter leading-none truncate">{ventas.length}</h3>
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest truncate">{pagadas.length} Registros Confirmados</p>
               </div>
 
-              <div className="group space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 transition-colors italic">Acciones Pendientes</p>
-                <h3 className="text-5xl md:text-6xl font-black text-zinc-900 tracking-tighter leading-none">{pendientes.length}</h3>
-                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Validación de pagos requerida</p>
+              <div className="group space-y-6 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 transition-colors italic truncate">Acciones Pendientes</p>
+                <h3 className="text-4xl sm:text-5xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black text-zinc-900 tracking-tighter leading-none truncate">{pendientes.length}</h3>
+                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest truncate">Validación de pagos requerida</p>
               </div>
             </div>
 

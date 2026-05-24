@@ -34,6 +34,7 @@ export interface Sheet {
   "numeros boletas"?: number[];
   numeros?: number[]; // Por si hay alguna con el nombre anterior
   boletas?: number[]; // Por compatibilidad
+  modalidad?: "mini" | "normal"; // mini = $5.000/boleta, Premio $500.000
   creadoEn: Timestamp;
 }
 

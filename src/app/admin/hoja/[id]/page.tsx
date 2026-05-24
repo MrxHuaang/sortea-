@@ -237,6 +237,10 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
     }
   };
 
+  const isMini = hoja.modalidad === "mini";
+  const precioBoleta = isMini ? 5000 : config.precioBoleta;
+  const premioLabel = isMini ? "Premio: $500.000" : config.premio;
+
   const vendidasCount = allNumbers.filter(n => getStatus(n) === "pagada").length;
   const pendientesCount = allNumbers.filter(n => getStatus(n) === "fisica").length;
 
@@ -257,8 +261,11 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
             <Link href="/admin" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all cursor-pointer">
               <ChevronLeft size={14} /> Panel Administrativo
             </Link>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <h1 className="text-4xl md:text-5xl font-black text-zinc-900 tracking-tighter uppercase italic leading-none">{hoja.nombre}</h1>
+              {isMini && (
+                <span className="px-3 py-1 bg-amber-100 text-amber-600 text-[10px] font-black uppercase tracking-widest rounded-full">Mini — $5.000/boleta</span>
+              )}
               <div className="flex items-center gap-2 px-3 py-1 bg-zinc-100 rounded-full text-[10px] font-black uppercase text-zinc-500">
                 <User size={12} /> Responsable: Familia
               </div>
@@ -346,7 +353,7 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
                   </div>
                   <div>
                     <p className="text-2xl font-black italic leading-none">{selectedNumbers.length} Marcadas</p>
-                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">Total: {formatCurrency(selectedNumbers.length * config.precioBoleta)}</p>
+                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">Total: {formatCurrency(selectedNumbers.length * precioBoleta)}</p>
                   </div>
                 </div>
                 
@@ -377,7 +384,7 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
                 <div className="flex items-center gap-3 w-1/3">
                   <Image src="/logo.png" alt="Logo" width={32} height={28} className="object-contain" />
                   <div>
-                    <h1 className="text-[11px] font-black uppercase tracking-tighter leading-none italic">{config.premio}</h1>
+                    <h1 className="text-[11px] font-black uppercase tracking-tighter leading-none italic">{premioLabel}</h1>
                     <p className="text-[6px] font-black uppercase tracking-[0.2em] text-black/60">Premium System</p>
                   </div>
                 </div>
@@ -386,7 +393,7 @@ export default function SheetManagementPage({ params }: { params: Promise<{ id: 
                 </div>
                 <div className="text-right w-1/3 flex flex-col justify-center">
                   <p className="text-[10px] font-black uppercase leading-none">{hoja.nombre}</p>
-                  <p className="text-[9px] font-bold text-black mt-1">{formatCurrency(config.precioBoleta)} • {config.nequiNumero || 'Nequi'}</p>
+                  <p className="text-[9px] font-bold text-black mt-1">{formatCurrency(precioBoleta)} • {config.nequiNumero || 'Nequi'}</p>
                 </div>
               </header>
 

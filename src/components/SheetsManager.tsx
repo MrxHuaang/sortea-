@@ -26,6 +26,7 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
   const [hojas, setHojas] = useState<Sheet[]>([]);
   const [nombre, setNombre] = useState("");
   const [cantidad, setCantidad] = useState(20);
+  const [modalidad, setModalidad] = useState<"normal" | "mini">("normal");
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearch] = useState("");
 
@@ -82,6 +83,7 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
       batch.set(sheetRef, {
         nombre,
         "numeros boletas": seleccionados,
+        modalidad,
         creadoEn: serverTimestamp()
       });
 
@@ -188,8 +190,8 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Cantidad de Boletas</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   min={1}
                   max={totalBoletas}
                   value={cantidad}
@@ -197,6 +199,35 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
                   className="w-full bg-white p-5 rounded-2xl border-2 border-transparent focus:border-zinc-900 outline-none transition-all font-bold"
                   placeholder="Ej: 20"
                 />
+              </div>
+
+              {/* Modalidad */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Modalidad</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalidad("normal")}
+                    className={cn(
+                      "p-4 rounded-2xl border-2 transition-all text-left",
+                      modalidad === "normal" ? "bg-zinc-900 border-zinc-900 text-white" : "bg-white border-zinc-100 text-zinc-500 hover:border-zinc-300"
+                    )}
+                  >
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Normal</p>
+                    <p className="text-[9px] font-bold mt-1 opacity-70">$10.000 • Premio $1M</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalidad("mini")}
+                    className={cn(
+                      "p-4 rounded-2xl border-2 transition-all text-left",
+                      modalidad === "mini" ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-zinc-100 text-zinc-500 hover:border-zinc-300"
+                    )}
+                  >
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Mini</p>
+                    <p className="text-[9px] font-bold mt-1 opacity-70">$5.000 • Premio $500K</p>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -243,7 +274,12 @@ export default function SheetsManager({ totalBoletas, ventas }: SheetsManagerPro
                             <FileText size={24} />
                           </div>
                           <div>
-                            <h4 className="text-xl font-black text-zinc-900 uppercase italic">{hoja.nombre}</h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xl font-black text-zinc-900 uppercase italic">{hoja.nombre}</h4>
+                              {hoja.modalidad === "mini" && (
+                                <span className="px-2 py-0.5 bg-amber-100 text-amber-600 text-[9px] font-black uppercase tracking-widest rounded-full">Mini</span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-3 mt-1">
                               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{numeros.length} Boletas</span>
                               <span className="w-1 h-1 bg-zinc-200 rounded-full"></span>

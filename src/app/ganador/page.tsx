@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { Config } from "@/types";
 import confetti from "canvas-confetti";
-import { Trophy, Crown, Star } from "lucide-react";
+import { Trophy, Crown, Star, TicketX } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 
@@ -43,7 +43,7 @@ export default function WinnerPage() {
       if (docSnap.exists()) {
         const data = docSnap.data() as Config;
         setConfig(data);
-        if (data.ganador) {
+        if (data.ganador && !data.ganador.sinGanador) {
           triggerConfetti();
         }
       }
@@ -86,6 +86,42 @@ export default function WinnerPage() {
               >
                 Elegir mis números
               </Link>
+            </div>
+          ) : config.ganador.sinGanador ? (
+            <div className="animate-in fade-in zoom-in duration-700 space-y-12 w-full">
+              <div className="w-32 h-32 bg-zinc-900 text-white rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl">
+                <TicketX size={64} strokeWidth={2.5} />
+              </div>
+
+              <div className="space-y-6">
+                <h1 className="text-6xl md:text-8xl font-black text-zinc-900 tracking-tighter uppercase leading-none italic">
+                  Sorteo Desierto
+                </h1>
+                <p className="text-zinc-400 font-black uppercase tracking-[0.4em] text-sm">Nadie ganó esta vez</p>
+              </div>
+
+              <div className="bg-zinc-50 border border-zinc-100 p-12 md:p-16 rounded-[4rem] space-y-10">
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-400">Número Ganador</p>
+                  <p className="text-8xl md:text-[10rem] font-black tracking-tighter leading-none italic text-zinc-900">
+                    #{formatWinnerNumber(config.ganador.numero)}
+                  </p>
+                  {config.ganador.numeroLoteria && (
+                    <div className="pt-4 space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Resultado {config.loteria}</p>
+                      <p className="text-xl font-bold text-zinc-600">Lotero: {config.ganador.numeroLoteria} — Últimas {config.cifrasJuego} cifras: {formatWinnerNumber(config.ganador.numero)}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="h-px bg-zinc-200 w-24 mx-auto" />
+
+                <p className="text-zinc-500 font-medium max-w-md mx-auto leading-relaxed italic">
+                  Esta boleta no fue vendida, así que el premio queda sin reclamar. Gracias a todos por participar.
+                </p>
+              </div>
+
+              <p className="text-zinc-400 font-medium italic">Resultado oficial certificado por Sortea System</p>
             </div>
           ) : (
             <div className="animate-in fade-in zoom-in duration-1000 space-y-12 w-full">

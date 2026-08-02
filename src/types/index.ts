@@ -42,4 +42,5 @@ export interface Ganador {
   numero: number;
   nombre: string;
   numeroLoteria?: string; // Número completo de la lotería (4 cifras)
+  sinGanador?: boolean; // true = el sorteo jugó pero la boleta no estaba vendida
 }

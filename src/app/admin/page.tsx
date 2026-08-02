@@ -128,6 +128,31 @@ export default function AdminPage() {
     }
   };
 
+  const recordNoWinner = async () => {
+    if (!loteroNumber || !config) return;
+
+    const cifras = config.cifrasJuego || 3;
+    const winningTicket = parseInt(loteroNumber.slice(-cifras));
+
+    if (confirm(`¿Confirmar que la boleta #${winningTicket.toString().padStart(cifras, '0')} no fue vendida y el sorteo quedó desierto?`)) {
+      try {
+        await updateDoc(doc(db, "config", "actual"), {
+          ganador: {
+            numero: winningTicket,
+            nombre: "",
+            numeroLoteria: loteroNumber,
+            sinGanador: true
+          }
+        });
+        setIsDrawModalOpen(false);
+        setLoteroNumber("");
+        setWinnerName("");
+      } catch {
+        alert("Error al registrar el sorteo desierto");
+      }
+    }
+  };
+
   const removeWinner = async () => {
     if (confirm("¿Eliminar información del ganador actual?")) {
       await updateDoc(doc(db, "config", "actual"), { ganador: null });
@@ -456,14 +481,28 @@ export default function AdminPage() {
             </div>
 
             {config.ganador && (
-              <div className="bg-amber-50 border border-amber-100 p-8 rounded-[3rem] flex items-center justify-between gap-8">
+              <div className={cn(
+                "p-8 rounded-[3rem] flex items-center justify-between gap-8 border",
+                config.ganador.sinGanador ? "bg-zinc-50 border-zinc-100" : "bg-amber-50 border-amber-100"
+              )}>
                 <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-amber-400 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-amber-400/20">
+                  <div className={cn(
+                    "w-16 h-16 text-white rounded-2xl flex items-center justify-center shadow-xl",
+                    config.ganador.sinGanador ? "bg-zinc-900 shadow-zinc-200" : "bg-amber-400 shadow-amber-400/20"
+                  )}>
                     <Trophy size={32} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Ganador Registrado</p>
-                    <h4 className="text-2xl font-black text-zinc-900 uppercase italic">#{config.ganador.numero.toString().padStart(config.cifrasJuego || 3, '0')} — {config.ganador.nombre}</h4>
+                    <p className={cn(
+                      "text-[10px] font-black uppercase tracking-widest",
+                      config.ganador.sinGanador ? "text-zinc-500" : "text-amber-600"
+                    )}>
+                      {config.ganador.sinGanador ? "Sorteo Desierto" : "Ganador Registrado"}
+                    </p>
+                    <h4 className="text-2xl font-black text-zinc-900 uppercase italic">
+                      #{config.ganador.numero.toString().padStart(config.cifrasJuego || 3, '0')}
+                      {config.ganador.sinGanador ? " — Boleta no vendida" : ` — ${config.ganador.nombre}`}
+                    </h4>
                   </div>
                 </div>
                 <button onClick={removeWinner} className="p-4 text-zinc-300 hover:text-red-500 transition-colors cursor-pointer">
@@ -515,18 +554,30 @@ export default function AdminPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Nombre del Ganador</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={winnerName}
                   onChange={(e) => setWinnerName(e.target.value)}
                   className="w-full bg-zinc-50 p-5 rounded-2xl border-2 border-transparent focus:border-amber-400 outline-none transition-all font-bold"
                   placeholder="Ej: Martha Cecilia"
                 />
+                <p className="text-[10px] font-medium text-zinc-400 leading-relaxed">
+                  Si la boleta ganadora no fue vendida, deja este campo vacío y usa <span className="font-black text-zinc-500">Nadie ganó</span>.
+                </p>
               </div>
             </div>
-            <div className="flex gap-4">
-              <button onClick={() => setIsDrawModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-zinc-400 cursor-pointer">Cancelar</button>
-              <button onClick={recordWinner} className="flex-[2] bg-amber-400 text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-xl shadow-amber-400/20 cursor-pointer">Confirmar Ganador</button>
+            <div className="space-y-3">
+              <div className="flex gap-4">
+                <button onClick={() => setIsDrawModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-zinc-400 cursor-pointer">Cancelar</button>
+                <button onClick={recordWinner} className="flex-[2] bg-amber-400 text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-xl shadow-amber-400/20 cursor-pointer">Confirmar Ganador</button>
+              </div>
+              <button
+                onClick={recordNoWinner}
+                disabled={!loteroNumber}
+                className="w-full py-4 rounded-2xl border-2 border-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-40 disabled:hover:border-zinc-100 disabled:hover:text-zinc-500 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                Nadie ganó — Sorteo desierto
+              </button>
             </div>
           </div>
         </div>

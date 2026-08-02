@@ -43,4 +43,5 @@ export interface Ganador {
   nombre: string;
   numeroLoteria?: string; // Número completo de la lotería (4 cifras)
   sinGanador?: boolean; // true = el sorteo jugó pero la boleta no estaba vendida
+  fechaJugada?: string; // Fecha real en que jugó el sorteo (YYYY-MM-DD)
 }

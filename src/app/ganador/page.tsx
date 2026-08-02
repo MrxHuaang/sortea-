@@ -52,6 +52,11 @@ export default function WinnerPage() {
     return unsub;
   }, []);
 
+  const formatDrawDate = (dateStr: string) => {
+    return new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+      .format(new Date(dateStr + "T12:00:00"));
+  };
+
   const formatWinnerNumber = (num: number) => {
     return String(num).padStart(config?.cifrasJuego || 3, '0');
   };
@@ -98,6 +103,11 @@ export default function WinnerPage() {
                   Sorteo Desierto
                 </h1>
                 <p className="text-zinc-400 font-black uppercase tracking-[0.4em] text-sm">Nadie ganó esta vez</p>
+                {config.ganador.fechaJugada && (
+                  <p className="text-zinc-500 font-bold italic">
+                    El sorteo jugó el {formatDrawDate(config.ganador.fechaJugada)}
+                  </p>
+                )}
               </div>
 
               <div className="bg-zinc-50 border border-zinc-100 p-12 md:p-16 rounded-[4rem] space-y-10">
@@ -137,6 +147,11 @@ export default function WinnerPage() {
                   ¡Victoria!
                 </h1>
                 <p className="text-zinc-400 font-black uppercase tracking-[0.4em] text-sm">Felicidades al ganador oficial</p>
+                {config.ganador.fechaJugada && (
+                  <p className="text-zinc-500 font-bold italic">
+                    El sorteo jugó el {formatDrawDate(config.ganador.fechaJugada)}
+                  </p>
+                )}
               </div>
 
               <div className="bg-zinc-900 text-white p-12 md:p-20 rounded-[4rem] shadow-2xl relative overflow-hidden group transition-colors border border-transparent">

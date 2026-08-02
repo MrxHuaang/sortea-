@@ -53,7 +53,15 @@ export default function AdminPage() {
   // Estados para sorteo
   const [loteroNumber, setLoteroNumber] = useState("");
   const [winnerName, setWinnerName] = useState("");
+  const [drawDate, setDrawDate] = useState("");
   const [isDrawModalOpen, setIsDrawModalOpen] = useState(false);
+
+  const openDrawModal = () => {
+    // Prellenar con la fecha configurada del sorteo si ya es una fecha real
+    const fecha = config?.fechaSorteo;
+    setDrawDate(fecha && fecha !== "Al completar la boletería" ? fecha : "");
+    setIsDrawModalOpen(true);
+  };
 
   useEffect(() => {
     async function verify() {
@@ -104,9 +112,14 @@ export default function AdminPage() {
     setIsAdmin(false);
   };
 
+  const formatDrawDate = (dateStr: string) => {
+    return new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+      .format(new Date(dateStr + "T12:00:00"));
+  };
+
   const recordWinner = async () => {
-    if (!loteroNumber || !winnerName || !config) return;
-    
+    if (!loteroNumber || !winnerName || !drawDate || !config) return;
+
     const cifras = config.cifrasJuego || 3;
     const winningTicket = parseInt(loteroNumber.slice(-cifras));
 
@@ -116,7 +129,8 @@ export default function AdminPage() {
           ganador: {
             numero: winningTicket,
             nombre: winnerName,
-            numeroLoteria: loteroNumber
+            numeroLoteria: loteroNumber,
+            fechaJugada: drawDate
           }
         });
         setIsDrawModalOpen(false);
@@ -129,7 +143,7 @@ export default function AdminPage() {
   };
 
   const recordNoWinner = async () => {
-    if (!loteroNumber || !config) return;
+    if (!loteroNumber || !drawDate || !config) return;
 
     const cifras = config.cifrasJuego || 3;
     const winningTicket = parseInt(loteroNumber.slice(-cifras));
@@ -141,7 +155,8 @@ export default function AdminPage() {
             numero: winningTicket,
             nombre: "",
             numeroLoteria: loteroNumber,
-            sinGanador: true
+            sinGanador: true,
+            fechaJugada: drawDate
           }
         });
         setIsDrawModalOpen(false);
@@ -446,7 +461,7 @@ export default function AdminPage() {
                 </div>
 
                 <button 
-                  onClick={() => setIsDrawModalOpen(true)}
+                  onClick={openDrawModal}
                   className="bg-amber-400 hover:bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-400/20 flex items-center gap-3 transition-all cursor-pointer"
                 >
                   <Trophy size={18} />
@@ -503,6 +518,11 @@ export default function AdminPage() {
                       #{config.ganador.numero.toString().padStart(config.cifrasJuego || 3, '0')}
                       {config.ganador.sinGanador ? " — Boleta no vendida" : ` — ${config.ganador.nombre}`}
                     </h4>
+                    {config.ganador.fechaJugada && (
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-1">
+                        Jugó el {formatDrawDate(config.ganador.fechaJugada)}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <button onClick={removeWinner} className="p-4 text-zinc-300 hover:text-red-500 transition-colors cursor-pointer">
@@ -553,6 +573,15 @@ export default function AdminPage() {
                 />
               </div>
               <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Fecha en que jugó el sorteo</label>
+                <input
+                  type="date"
+                  value={drawDate}
+                  onChange={(e) => setDrawDate(e.target.value)}
+                  className="w-full bg-zinc-50 p-5 rounded-2xl border-2 border-transparent focus:border-amber-400 outline-none transition-all font-bold text-zinc-900"
+                />
+              </div>
+              <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Nombre del Ganador</label>
                 <input
                   type="text"
@@ -569,11 +598,17 @@ export default function AdminPage() {
             <div className="space-y-3">
               <div className="flex gap-4">
                 <button onClick={() => setIsDrawModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-zinc-400 cursor-pointer">Cancelar</button>
-                <button onClick={recordWinner} className="flex-[2] bg-amber-400 text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-xl shadow-amber-400/20 cursor-pointer">Confirmar Ganador</button>
+                <button
+                  onClick={recordWinner}
+                  disabled={!loteroNumber || !winnerName || !drawDate}
+                  className="flex-[2] bg-amber-400 text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-xl shadow-amber-400/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Confirmar Ganador
+                </button>
               </div>
               <button
                 onClick={recordNoWinner}
-                disabled={!loteroNumber}
+                disabled={!loteroNumber || !drawDate}
                 className="w-full py-4 rounded-2xl border-2 border-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-40 disabled:hover:border-zinc-100 disabled:hover:text-zinc-500 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 Nadie ganó — Sorteo desierto
